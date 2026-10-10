@@ -50,7 +50,7 @@ export default function App() {
     void Promise.all([loadProfile(), loadAttempts()]).then(([p, a]) => {
       setProfile(p);
       setAttempts(a);
-      setScreen(p ? { name: "home" } : { name: "landing" });
+      setScreen({ name: "landing" });
     });
   }, []);
 
