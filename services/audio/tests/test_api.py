@@ -36,13 +36,28 @@ def test_calibrate_audio_returns_fixture():
     assert client.post("/calibrate/audio", files=files).json() == CAL
 
 
-def test_coach_falls_back_to_template_text():
-    item = {
-        "diagnosis": {"syllableIndex": 0, "issueId": "y_tongue_back", "articulator": "tongue",
-                      "severity": 3, "evidence": {}, "messageKey": "y_tongue_back"},
-        "title": "Tongue forward",
-        "instruction": "Your lips are right. Keep your tongue tip behind your lower teeth.",
-    }
-    prompt = {"id": "nv", "hanzi": "女", "pinyin": ["nv3"], "gloss": "woman", "reading": "word", "focus": ["vowel"]}
-    r = client.post("/coach", json={"prompt": prompt, "items": [item]})
-    assert r.json() == {"tips": [{"issueId": "y_tongue_back", "text": item["instruction"]}]}
+ITEM = {
+    "diagnosis": {"syllableIndex": 0, "issueId": "y_tongue_back", "articulator": "tongue",
+                  "severity": 3, "evidence": {}, "messageKey": "y_tongue_back"},
+    "title": "Tongue forward",
+    "instruction": "Your lips are right. Keep your tongue tip behind your lower teeth.",
+}
+PROMPT = {"id": "nv", "hanzi": "女", "pinyin": ["nv3"], "gloss": "woman", "reading": "word", "focus": ["vowel"]}
+COACH = {"prompt": PROMPT, "items": [ITEM], "l1": "en"}
+
+
+def test_coach_without_key_returns_template_text(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    assert client.post("/coach", json=COACH).json() == {"tips": [{"issueId": "y_tongue_back", "text": ITEM["instruction"]}]}
+
+
+def test_coach_uses_gemini_and_falls_back_on_error(monkeypatch):
+    import app.coach as coach
+    monkeypatch.setenv("GEMINI_API_KEY", "test")
+    monkeypatch.setattr(coach, "_tip", lambda *a: "Push your tongue forward, like in 'see'.")
+    assert client.post("/coach", json=COACH).json()["tips"][0]["text"].startswith("Push your tongue")
+
+    def boom(*a):
+        raise TimeoutError
+    monkeypatch.setattr(coach, "_tip", boom)
+    assert client.post("/coach", json=COACH).json()["tips"][0]["text"] == ITEM["instruction"]

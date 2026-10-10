@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PROMPTS } from "../content/prompts";
 import { diagnose } from "../diagnosis";
 import { FIXTURES, fixtureAnalysis, fixtureFace } from "../fixtures";
+import { TeacherHead } from "../teacher";
 
 export default function App() {
   const [promptId, setPromptId] = useState(PROMPTS[0].id);
@@ -12,7 +13,7 @@ export default function App() {
   const attempts = FIXTURES.filter((f) => f.promptId === promptId);
   const attempt = attempts.find((f) => f.variant === variant) ?? attempts[0];
   const audio = fixtureAnalysis(promptId, attempt.variant);
-  const cards = diagnose(prompt, audio, fixtureFace(promptId, attempt.variant));
+  const cards = diagnose(prompt, audio, fixtureFace(promptId, attempt.variant), "en");
 
   return (
     <main style={{ fontFamily: "system-ui, sans-serif", maxWidth: 640, margin: "2rem auto", padding: "0 16px" }}>
@@ -32,6 +33,7 @@ export default function App() {
           </select>
         </label>
       </p>
+      <TeacherHead pose={prompt.vowelTargets?.[0] ?? "rest"} />
       <h2>Syllables</h2>
       <ul>
         {audio.syllables.map((s) => (
@@ -44,7 +46,7 @@ export default function App() {
       </ul>
       <h2>Fixes</h2>
       {cards.length ? cards.map((c, i) => (
-        <article key={i}><h3>{c.title}</h3><p>{c.instruction}</p></article>
+        <article key={i}><h3>{c.title}</h3><p>{c.instruction}</p>{c.l1Note && <p><em>{c.l1Note}</em></p>}</article>
       )) : <p>No fixes.</p>}
     </main>
   );

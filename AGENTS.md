@@ -1,29 +1,35 @@
 # Orbi: instructions for coding agents
 
-Orbi is a browser app that listens to a learner say a Mandarin word, watches their lips, and tells them which tone or mouth shape went wrong. Two people build it in parallel, each with their own agent, in separate lanes.
+Orbi is a browser app that listens to a learner say a Mandarin word, watches their lips, and tells them which tone or mouth shape went wrong, with a 3D teacher head showing what to do instead. It's a **3-hour build** by three people (two at the start), each with their own agent, in separate lanes. The product goal is a clear, friendly UI.
 
 - The spec is [SPEC.md](SPEC.md). Read the sections your lane guide names before writing code.
-- Lane guides: [docs/PERSON_A.md](docs/PERSON_A.md) (face & screens) and [docs/PERSON_B.md](docs/PERSON_B.md) (ears & brain).
-- How the two of us work together: [docs/WORKFLOW.md](docs/WORKFLOW.md).
+- Lane guides: [docs/PERSON_A.md](docs/PERSON_A.md) (screens & data), [docs/PERSON_B.md](docs/PERSON_B.md) (ears & brain), [docs/PERSON_C.md](docs/PERSON_C.md) (face & teacher).
+- How we work together: [docs/WORKFLOW.md](docs/WORKFLOW.md).
+- Required stack: **Gemini** (Google DeepMind) for coaching text and reference audio, **Supabase** for profiles and progress. Don't swap in other AI or database providers.
 
 ## Lanes: only edit inside yours
 
 | Lane | Owns |
 |---|---|
-| A: face & screens | `apps/web/src/capture/`, `apps/web/src/face/`, `apps/web/src/ui/`, `apps/web/src/api/`, `apps/web/src/fixtures.ts`, `apps/web/src/main.tsx`, `apps/web/public/models/`, web config (`package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`) |
-| B: ears & brain | `services/audio/` (all of it, including `app/coach.py`), `apps/web/src/diagnosis/`, `apps/web/src/content/`, `apps/web/public/ref/` (native reference audio) |
-| Shared: both people agree | `shared/` (contracts and fixtures), `SPEC.md`, `AGENTS.md`, `CLAUDE.md`, `docs/`, `.github/`, `.claude/` |
+| A: screens & data | `apps/web/src/ui/`, `apps/web/src/capture/`, `apps/web/src/api/`, `apps/web/src/data/`, `apps/web/src/fixtures.ts`, `apps/web/src/main.tsx`, `supabase/`, web config (`package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`) |
+| B: ears & brain | `services/audio/` (all of it), `apps/web/src/diagnosis/`, `apps/web/src/content/`, `apps/web/public/ref/` |
+| C: face & teacher | `apps/web/src/face/`, `apps/web/src/teacher/`, `apps/web/public/models/` |
+| Shared: everyone agrees | `shared/` (contracts and fixtures), `SPEC.md`, `AGENTS.md`, `CLAUDE.md`, `NOTES.md` structure, `docs/`, `.github/`, `.claude/` |
 
 - Reading or importing another lane's code is fine. Editing it is not. If you need a change there, add a line under "Requests" in [NOTES.md](NOTES.md) and tell your human.
 - Ask your human before you touch anything in the Shared row.
+- The web dependencies for every lane (three, @react-three/fiber, @react-three/drei, @mediapipe/tasks-vision, @supabase/supabase-js) are already installed. Adding another one: commit only `package.json` + `package-lock.json`, right after pulling, and say so in chat.
 - If the spec is ambiguous, pick the simplest option and log it under "Decisions" in NOTES.md.
 
 ## The seams (contracts) between lanes
 
-- Data shapes: `shared/contracts/types.ts`, mirrored in `services/audio/app/models.py`. A change updates both files and the fixtures (`python3 shared/fixtures/make_fixtures.py`) in one PR.
+- Data shapes: `shared/contracts/types.ts`, mirrored in `services/audio/app/models.py` and `supabase/migrations/`. A change updates all of them and the fixtures (`python3 shared/fixtures/make_fixtures.py`) in one PR.
 - HTTP: `POST /analyze`, `POST /calibrate/audio`, `POST /coach`, `GET /health` (SPEC.md, "Endpoints").
-- In the browser: lane A's UI calls lane B's `targetsFor(prompt)` and `diagnose(prompt, audio, face)` from `apps/web/src/diagnosis/index.ts`, and reads `PROMPTS` from `apps/web/src/content/prompts.ts`. Keep those signatures stable.
-- Fixture mode must keep working: the web app runs with the audio service stopped (`VITE_AUDIO_MODE=fixture`) and without a camera (`VITE_FACE_MODE=fixture`). Build a mock first, then the real thing behind the same interface.
+- In the browser, keep these signatures stable:
+  - lane B: `targetsFor(prompt)` and `diagnose(prompt, audio, face, l1)` in `apps/web/src/diagnosis/index.ts`; `PROMPTS`, `PRACTICE_SETS` in `apps/web/src/content/prompts.ts`; `L1S`, `l1NoteFor` in `apps/web/src/content/l1.ts`
+  - lane C: `<TeacherHead pose highlight />` in `apps/web/src/teacher/index.tsx`
+  - lane A: `loadProfile`, `saveProfile`, `saveAttempt`, `loadAttempts` in `apps/web/src/data/store.ts`
+- Fixture mode must keep working: the web app runs with the audio service stopped (`VITE_AUDIO_MODE=fixture`), without a camera (`VITE_FACE_MODE=fixture`), and without Supabase or Gemini keys. Build a mock first, then the real thing behind the same interface.
 
 ## Commands
 

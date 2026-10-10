@@ -115,8 +115,24 @@ export interface FeedbackItem {
   diagnosis: Diagnosis;
   title: string;              // "Round your lips"
   instruction: string;        // template text, always present
-  coaching?: string;          // LLM-polished text, may arrive later
+  coaching?: string;          // Gemini-polished text, may arrive later
+  l1Note?: string;            // "Common for English speakers: ..." when the issue matches the learner's L1
   targetVisual?: TargetVisual;
+}
+
+// ---- Learner profile and progress (stored in Supabase, or localStorage offline) ----
+
+/** The learner's native language. Orbi always teaches Mandarin. */
+export type L1Code = "en" | "es" | "fr" | "ja" | "ko" | "vi" | "other";
+
+export interface Profile { l1: L1Code; calibration?: Calibration }
+
+export interface AttemptRecord {
+  promptId: string;
+  passed: boolean;            // no fix card of severity 2 or 3
+  score: number;              // the match ring's 0–100
+  issueIds: string[];
+  createdAt: string;          // ISO time
 }
 
 // ---- HTTP bodies (audio service) ----
@@ -124,7 +140,7 @@ export interface FeedbackItem {
 /** `meta` field of POST /analyze (multipart, next to the `audio` WAV). */
 export interface AnalyzeMeta { promptId: string; targets: SyllableTarget[]; calibration: AudioCalibration }
 
-export interface CoachRequest { prompt: PromptItem; items: FeedbackItem[] }
+export interface CoachRequest { prompt: PromptItem; items: FeedbackItem[]; l1: L1Code }
 export interface CoachResponse { tips: { issueId: string; text: string }[] }
 
 // ---- Fixtures (shared/fixtures/index.json) ----

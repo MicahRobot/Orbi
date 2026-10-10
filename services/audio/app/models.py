@@ -1,4 +1,8 @@
-"""Pydantic mirror of shared/contracts/types.ts. Change both together, in one PR."""
+"""Pydantic mirror of shared/contracts/types.ts. Change both together, in one PR.
+
+Profile and AttemptRecord are not mirrored: only the browser and Supabase use them
+(see supabase/migrations/).
+"""
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -7,6 +11,7 @@ Tone = Literal[1, 2, 3, 4, 5]
 ToneVariant = Literal["T1", "T2", "T3_full", "T3_half", "T4", "T5"]
 VowelClass = Literal["i", "y", "u", "other"]
 TargetVisual = Literal["spread", "rounded", "open", "neutral"]
+L1Code = Literal["en", "es", "fr", "ja", "ko", "vi", "other"]
 ToneIssueId = Literal[
     "t1_drift", "t1_low", "t2_shallow", "t2_late", "t3_not_low",
     "t3_full_in_context", "t4_shallow", "t4_low_start", "wrong_tone", "no_pitch",
@@ -148,6 +153,7 @@ class FeedbackItem(Model):
     title: str
     instruction: str
     coaching: Optional[str] = None
+    l1Note: Optional[str] = None
     targetVisual: Optional[TargetVisual] = None
 
 
@@ -162,6 +168,7 @@ class AnalyzeMeta(Model):
 class CoachRequest(Model):
     prompt: PromptItem
     items: list[FeedbackItem]
+    l1: L1Code
 
 
 class Tip(Model):

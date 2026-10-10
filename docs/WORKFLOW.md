@@ -1,90 +1,93 @@
 # How we work together
 
-Two people, two computers, two lanes. Each of us owns different folders, so we can both vibecode all day without stepping on each other. The only things we change together are the contracts in `shared/`.
+Three people (two at the start, one joining later), three computers, three lanes, **three hours**. Each of us owns different folders, so we can all vibecode at once without stepping on each other. The only things we change together are the contracts in `shared/`.
 
-## 1. One-time setup (each of us)
+## 1. Setup (first 15 minutes)
 
-1. **Repo access.** The repo owner adds the other person: GitHub → the Orbi repo → Settings → Collaborators → Add people.
-2. **Clone and install.**
+**Each person**
+
+1. **Repo access.** Micah adds the others: GitHub → the Orbi repo → Settings → Collaborators → Add people.
+2. **Clone and install.** You need Node 20+ and Python 3.11+.
    ```bash
    git clone https://github.com/MicahRobot/orbi.git && cd orbi
-   (cd apps/web && npm install)
+   (cd apps/web && npm install && cp .env.example .env)
    cd services/audio && python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
    pip install -r requirements.txt && cp .env.example .env
    ```
-   You need Node 20+ and Python 3.11+. Both of us install both halves, so either can run the whole app.
-3. **Ponytail.** Open the repo in Claude Code (terminal, desktop app or IDE) and accept the "trust this folder" prompt. `.claude/settings.json` registers the ponytail marketplace and turns the plugin on; run `/plugin` to check it's listed. If it isn't, type these as two separate messages: `/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail`. Ponytail's hooks need `node` on your PATH. Using Cursor, Codex or another agent instead? It reads `AGENTS.md`, which carries the same rules.
-4. **Pick a lane.** Read the guide for yours: [PERSON_A.md](PERSON_A.md) or [PERSON_B.md](PERSON_B.md).
+3. **Ponytail.** Open the repo in Claude Code and accept the "trust this folder" prompt. `.claude/settings.json` registers the ponytail marketplace and turns the plugin on; run `/plugin` to check. If it's missing, send these as two separate messages: `/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail`. Its hooks need `node` on your PATH. Cursor, Codex and other agents read `AGENTS.md`, which carries the same rules.
+4. **Pick your lane** and open its guide.
 
-| | Lane A: face & screens | Lane B: ears & brain |
-|---|---|---|
-| In one line | Everything the learner sees and touches | Everything that judges the sound |
-| Builds | Mic + camera capture, MediaPipe lip tracking, the four screens, pitch chart, demo mode | Python audio service (syllables, tones, vowels), sandhi rules, diagnosis rules, prompts, coaching text |
-| Good fit for | Whoever likes UI and browser APIs | Whoever likes logic and signal processing; ideally the stronger Mandarin speaker |
-| Spec agents covered | A1 Frontend + A2 Face | A3 Audio + A4 Brain |
+**Once, by one person** (lane A does Supabase, lane B does Gemini; share the values in your team chat, never in git):
+
+- **Gemini**: create an API key in [Google AI Studio](https://aistudio.google.com). Everyone puts it in `services/audio/.env` as `GEMINI_API_KEY`.
+- **Supabase**: create a project; paste `supabase/migrations/0001_init.sql` into the SQL editor and run it; turn on Authentication → Sign In / Providers → **Allow anonymous sign-ins**; copy the project URL and publishable key into `apps/web/.env` as `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+
+Nothing waits on these: without keys, coaching shows template text and progress stays in the browser.
+
+| | Lane A: screens & data | Lane B: ears & brain | Lane C: face & teacher |
+|---|---|---|---|
+| In one line | Everything the learner sees and taps | Everything that judges the sound | The learner's lips and the teacher's mouth |
+| Builds | Onboarding, home, practice, results (ring, lights, pitch curve, streak), mic capture, Supabase | Python audio service, sandhi, diagnosis rules, L1 engine, Gemini coaching + reference audio | MediaPipe lip tracking, then the 3D teacher head |
+| Starts | 0:00 | 0:00 | when the third person arrives |
+| Good fit | Likes UI and polish | Likes logic and signal processing; ideally the best Mandarin speaker | Likes 3D, graphics, computer vision |
+| Guide | [PERSON_A.md](PERSON_A.md) | [PERSON_B.md](PERSON_B.md) | [PERSON_C.md](PERSON_C.md) |
 
 Exact folders per lane are in [AGENTS.md](../AGENTS.md).
 
-## 2. The daily loop
+## 2. The loop
 
 ```bash
 git switch main && git pull
-git switch -c a/pitch-chart          # prefix a/ or b/ with your lane
-# ... work with your agent, commit small and often ...
-git push -u origin a/pitch-chart     # then open a pull request on GitHub
+git switch -c a/results-ring          # prefix a/, b/ or c/ with your lane
+# ... work with your agent, commit small ...
+git push -u origin a/results-ring     # open a pull request
 ```
 
-1. Start your agent with the kickoff prompt from your lane guide, then give it one task at a time from your checklist.
-2. Before opening a PR, run `/ponytail-review` in Claude Code. It reads the code your change touches and flags bugs, missing tests and what to cut.
-3. Open a PR into `main`. CI runs the web typecheck, tests and build, plus the Python tests.
-4. CI green and the PR only touches your lane? Merge it yourself (squash). Post a one-liner in your chat so the other person knows to pull.
-5. Pull `main` at least every couple of hours. Lanes don't overlap, so conflicts should be rare.
+1. Start your agent with the kickoff prompt from your lane guide, then give it one checklist item at a time.
+2. In a 3-hour build, merge small and often: aim for a PR every 20–30 minutes.
+3. Before opening a PR, run `/ponytail-review` if you have a minute. It flags bugs, missing tests and what to cut.
+4. CI green and the PR only touches your lane? Merge it yourself (squash) and post a one-liner in chat so the others pull.
+5. Pull `main` whenever someone merges. Lanes don't overlap, so conflicts should be rare.
 
-Never push broken fixture mode: with the audio service stopped and no camera, `npm run dev` must still show the app.
+Never break fixture mode: with the audio service stopped, no camera and no keys, `npm run dev` must still show the app.
 
 ## 3. Changing a contract (anything in `shared/`)
 
-The contracts are the only thing that couples our lanes, so they change on purpose, never as a side effect.
+The contracts are the only thing coupling our lanes, so they change on purpose.
 
-1. Say what you want to change and why in chat (or add it under "Requests" in [NOTES.md](../NOTES.md)).
-2. Open a PR that only does the contract change, and updates all of these together:
+1. Say what you want to change and why in chat (or under "Requests" in [NOTES.md](../NOTES.md)).
+2. One small PR that updates everything together:
    - `shared/contracts/types.ts`
    - `services/audio/app/models.py`
+   - `supabase/migrations/` if `Profile` or `AttemptRecord` changed (add a new numbered file)
    - the fixtures: edit `shared/fixtures/make_fixtures.py`, then run `python3 shared/fixtures/make_fixtures.py`
-3. The other person approves it before it merges. Then both of you pull.
+3. Someone from the other lane approves it before it merges. Then everyone pulls.
 
-The same applies to the seams that aren't in `shared/`: the HTTP endpoints, and the `targetsFor` / `diagnose` signatures in `apps/web/src/diagnosis/index.ts`.
+The same goes for the in-browser seams listed in AGENTS.md (`targetsFor`, `diagnose`, `TeacherHead`, the store functions) and the HTTP endpoints.
 
-## 4. Integration checkpoints (do these together)
+## 4. Schedule and integration checkpoints
 
-Each lane builds on mocks first, so nothing blocks. Then we connect the real pieces in this order (SPEC.md, "Integration order"). Get on a call, one person drives.
+| Time | What | Done when |
+|---|---|---|
+| 0:00–0:15 | Setup (above) | Everyone runs the app in fixture mode |
+| 0:15–1:15 | Build on mocks | A: screens on fixtures. B: sandhi + rules, then tone scoring. C: face loop |
+| **1:15** | **Checkpoint 1: tone path**, A + B | Saying 妈 麻 马 骂 into the mic shows four real pitch curves and a ring (`VITE_AUDIO_MODE=live`). If not, tones are demoed from fixtures |
+| 1:15–2:15 | Integrate | Vowel path with real face data (`VITE_FACE_MODE=live`), Gemini tips, reference audio, Supabase save/load, 3D teacher, demo mode |
+| **2:15** | **Feature freeze** | Only fixes and polish after this |
+| 2:15–2:45 | Polish | Copy, spacing, loading/error states; each demo attempt tested 10 times |
+| 2:45–3:00 | Rehearse | Script twice with the headset mic; backup video recorded |
 
-| # | Connect | Who | Done when |
-|---|---|---|---|
-| 1 | Record → `/analyze` → pitch chart | A capture + B tone scoring | Saying 妈 麻 马 骂 shows four real pitch curves. Run the web app with `VITE_AUDIO_MODE=live`. |
-| 2 | Sandhi targets in, tone fix cards out | B's `targetsFor` + `diagnose` | 你好 with two full dips shows the sandhi card |
-| 3 | Face summaries into the diagnosis engine | A face + B rules | Lip roundness reaches `diagnose()`. `VITE_FACE_MODE=live` |
-| 4 | Vowel path (formants + roundness) | Both | 女 said as "nee" and as "noo" get two different fixes |
-| 5 | Coaching text, calibration polish, demo mode | Both | The 3-minute demo script runs start to finish |
+Do checkpoints on a call, one person driving.
 
-The spec's hour-12 gate applies: if checkpoint 1 isn't working by then, the face side stays in fixture mode for the demo.
+## 5. When the third person joins
 
-## 5. Optional: two agents each
-
-Each lane covers two of the spec's agents. To run both at once, give each agent its own worktree so they don't share a working copy:
-
-```bash
-git worktree add ../orbi-face -b a/face     # second checkout on its own branch
-cd ../orbi-face && claude                   # start the second agent here
-```
-
-Paste the matching kickoff prompt into each. Merge both branches through PRs as usual.
+1. Do the "each person" setup above (5 minutes), then read [PERSON_C.md](PERSON_C.md).
+2. Until then the face runs in fixture mode and the teacher is an SVG placeholder, so nobody is blocked.
+3. If nobody has joined by 1:00, whoever is ahead starts lane C's face tracking (it's on the demo path). The 3D teacher can land any time before the freeze.
 
 ## 6. Recordings
 
-Whoever speaks Mandarin best records, early (SPEC.md, "Content"):
+Whoever speaks Mandarin best records in the first hour (SPEC.md, "Content"):
 
-- Reference audio: each prompt three times, best take saved as `apps/web/public/ref/<promptId>.wav`.
-- Golden test set: five takes each of the correct demo words and the deliberate mistakes, saved in `shared/fixtures/audio/` as `<promptId>.<variant>.<take>.wav` (variants as in `shared/fixtures/index.json`).
-
-No fluent speaker? Use a zh-CN neural TTS voice for the reference audio and lean on the tone templates (SPEC.md, risks).
+- Tuning takes: two takes of each demo attempt, saved as `shared/fixtures/audio/<promptId>.<variant>.<take>.wav` (variants as in `shared/fixtures/index.json`).
+- Reference audio comes from Gemini TTS (`services/audio/scripts/make_reference_audio.py`). Listen to each file and re-record any word that sounds off.
