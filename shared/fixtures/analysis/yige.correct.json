@@ -1,0 +1,98 @@
+{
+  "promptId": "yige",
+  "durationSec": 1.53,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "yi1",
+        "surfaceTone": 2,
+        "variant": "T2",
+        "sandhiNote": "一 before tone 4 → yí"
+      },
+      "start": 0.25,
+      "end": 0.57,
+      "vowelStart": 0.346,
+      "vowelEnd": 0.522,
+      "tone": {
+        "target": "T2",
+        "producedChao": [
+          2.89,
+          2.75,
+          2.9,
+          3.13,
+          3.26,
+          3.71,
+          4.19,
+          4.33,
+          4.54,
+          5.07
+        ],
+        "targetChao": [
+          3.0,
+          2.83,
+          2.76,
+          3.08,
+          3.4,
+          3.72,
+          4.04,
+          4.36,
+          4.68,
+          5.0
+        ],
+        "nearest": "T2",
+        "rmse": 0.105,
+        "score": 95,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    },
+    {
+      "index": 1,
+      "target": {
+        "index": 1,
+        "pinyin": "ge4",
+        "surfaceTone": 4,
+        "variant": "T4"
+      },
+      "start": 0.61,
+      "end": 0.93,
+      "vowelStart": 0.706,
+      "vowelEnd": 0.882,
+      "tone": {
+        "target": "T4",
+        "producedChao": [
+          4.86,
+          4.62,
+          4.24,
+          3.57,
+          3.12,
+          2.9,
+          2.41,
+          1.75,
+          1.41,
+          1.15
+        ],
+        "targetChao": [
+          5.0,
+          4.56,
+          4.11,
+          3.67,
+          3.22,
+          2.78,
+          2.33,
+          1.89,
+          1.44,
+          1.0
+        ],
+        "nearest": "T4",
+        "rmse": 0.111,
+        "score": 94,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    }
+  ],
+  "warnings": []
+}

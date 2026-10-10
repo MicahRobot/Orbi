@@ -1,0 +1,97 @@
+{
+  "promptId": "zhongguo",
+  "durationSec": 1.53,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "zhong1",
+        "surfaceTone": 1,
+        "variant": "T1"
+      },
+      "start": 0.25,
+      "end": 0.57,
+      "vowelStart": 0.346,
+      "vowelEnd": 0.522,
+      "tone": {
+        "target": "T1",
+        "producedChao": [
+          5.15,
+          4.96,
+          4.86,
+          5.08,
+          5.12,
+          4.89,
+          4.91,
+          5.13,
+          5.06,
+          4.86
+        ],
+        "targetChao": [
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ],
+        "nearest": "T1",
+        "rmse": 0.111,
+        "score": 94,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    },
+    {
+      "index": 1,
+      "target": {
+        "index": 1,
+        "pinyin": "guo2",
+        "surfaceTone": 2,
+        "variant": "T2"
+      },
+      "start": 0.61,
+      "end": 0.93,
+      "vowelStart": 0.706,
+      "vowelEnd": 0.882,
+      "tone": {
+        "target": "T2",
+        "producedChao": [
+          3.06,
+          2.69,
+          2.74,
+          3.23,
+          3.39,
+          3.58,
+          4.09,
+          4.49,
+          4.59,
+          4.89
+        ],
+        "targetChao": [
+          3.0,
+          2.83,
+          2.76,
+          3.08,
+          3.4,
+          3.72,
+          4.04,
+          4.36,
+          4.68,
+          5.0
+        ],
+        "nearest": "T2",
+        "rmse": 0.104,
+        "score": 95,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    }
+  ],
+  "warnings": []
+}

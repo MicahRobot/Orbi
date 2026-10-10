@@ -1,0 +1,140 @@
+[
+  {
+    "promptId": "ma4",
+    "variant": "t2_dip",
+    "label": "麻 dips before it rises",
+    "beat": "0:40 Tones",
+    "expectCards": [
+      {
+        "syllableIndex": 1,
+        "issueId": "t2_late"
+      }
+    ]
+  },
+  {
+    "promptId": "ma4",
+    "variant": "correct",
+    "label": "All four tones right",
+    "beat": "0:40 Tones (retry turns green)",
+    "expectCards": []
+  },
+  {
+    "promptId": "nihao",
+    "variant": "full_dips",
+    "label": "Both syllables said as full tone 3",
+    "beat": "1:10 Sandhi",
+    "expectCards": [
+      {
+        "syllableIndex": 0,
+        "issueId": "wrong_tone"
+      }
+    ]
+  },
+  {
+    "promptId": "nihao",
+    "variant": "correct",
+    "label": "ní hǎo, sandhi applied",
+    "expectCards": []
+  },
+  {
+    "promptId": "nv",
+    "variant": "nee",
+    "label": "女 said as 'nee': lips spread",
+    "beat": "1:35 Face explains the error",
+    "expectCards": [
+      {
+        "syllableIndex": 0,
+        "issueId": "y_lips_not_rounded"
+      }
+    ]
+  },
+  {
+    "promptId": "nv",
+    "variant": "noo",
+    "label": "女 said as 'noo': lips rounded, tongue back",
+    "beat": "2:05 Same word, different fix",
+    "expectCards": [
+      {
+        "syllableIndex": 0,
+        "issueId": "y_tongue_back"
+      }
+    ]
+  },
+  {
+    "promptId": "nv",
+    "variant": "correct",
+    "label": "女 said correctly",
+    "beat": "2:20 Recognizes success",
+    "expectCards": []
+  },
+  {
+    "promptId": "nv",
+    "variant": "glide",
+    "label": "女 slides like English 'you'",
+    "expectCards": [
+      {
+        "syllableIndex": 0,
+        "issueId": "y_glide"
+      }
+    ]
+  },
+  {
+    "promptId": "ma4",
+    "variant": "t4_shallow",
+    "label": "骂 falls only halfway",
+    "expectCards": [
+      {
+        "syllableIndex": 3,
+        "issueId": "t4_shallow"
+      }
+    ]
+  },
+  {
+    "promptId": "ni",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "nu",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "qu",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "yu",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "bushi",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "yige",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "laoshi",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  },
+  {
+    "promptId": "zhongguo",
+    "variant": "correct",
+    "label": "Said correctly",
+    "expectCards": []
+  }
+]

@@ -1,0 +1,70 @@
+{
+  "audio": {
+    "f0": {
+      "medianHz": 140,
+      "lowHz": 95,
+      "highHz": 260
+    },
+    "formantCeilingHz": 5000,
+    "anchors": {
+      "i": {
+        "F1": 280,
+        "F2": 2250,
+        "F3": 2950
+      },
+      "u": {
+        "F1": 300,
+        "F2": 800,
+        "F3": 2300
+      },
+      "a": {
+        "F1": 750,
+        "F2": 1250,
+        "F3": 2600
+      }
+    }
+  },
+  "face": {
+    "neutral": {
+      "t": 0,
+      "detected": true,
+      "lipWidth": 0.4,
+      "lipHeight": 0.02,
+      "pucker": 0.05,
+      "funnel": 0.03,
+      "jawOpen": 0.05,
+      "smile": 0.1
+    },
+    "ee": {
+      "t": 0,
+      "detected": true,
+      "lipWidth": 0.48,
+      "lipHeight": 0.05,
+      "pucker": 0.02,
+      "funnel": 0.02,
+      "jawOpen": 0.12,
+      "smile": 0.45
+    },
+    "oo": {
+      "t": 0,
+      "detected": true,
+      "lipWidth": 0.28,
+      "lipHeight": 0.06,
+      "pucker": 0.65,
+      "funnel": 0.4,
+      "jawOpen": 0.15,
+      "smile": 0.02
+    },
+    "ah": {
+      "t": 0,
+      "detected": true,
+      "lipWidth": 0.42,
+      "lipHeight": 0.25,
+      "pucker": 0.03,
+      "funnel": 0.1,
+      "jawOpen": 0.6,
+      "smile": 0.05
+    }
+  },
+  "createdAt": "2026-10-10T12:00:00Z"
+}

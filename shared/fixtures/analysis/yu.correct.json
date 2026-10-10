@@ -1,0 +1,66 @@
+{
+  "promptId": "yu",
+  "durationSec": 1.17,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "yu2",
+        "surfaceTone": 2,
+        "variant": "T2",
+        "vowel": "y"
+      },
+      "start": 0.25,
+      "end": 0.57,
+      "vowelStart": 0.346,
+      "vowelEnd": 0.474,
+      "tone": {
+        "target": "T2",
+        "producedChao": [
+          3.14,
+          2.75,
+          2.65,
+          3.19,
+          3.49,
+          3.59,
+          3.99,
+          4.51,
+          4.7,
+          4.85
+        ],
+        "targetChao": [
+          3.0,
+          2.83,
+          2.76,
+          3.08,
+          3.4,
+          3.72,
+          4.04,
+          4.36,
+          4.68,
+          5.0
+        ],
+        "nearest": "T2",
+        "rmse": 0.111,
+        "score": 94,
+        "issues": [],
+        "voicedRatio": 0.92
+      },
+      "vowel": {
+        "target": "y",
+        "formants": {
+          "F1": 300,
+          "F2": 1989,
+          "F3": 2478
+        },
+        "f2n": 0.82,
+        "f3ratio": 0.84,
+        "heardAs": "y",
+        "glide": false,
+        "confidence": 0.6
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,66 @@
+{
+  "promptId": "nu",
+  "durationSec": 1.17,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "nu3",
+        "surfaceTone": 3,
+        "variant": "T3_full",
+        "vowel": "u"
+      },
+      "start": 0.25,
+      "end": 0.57,
+      "vowelStart": 0.346,
+      "vowelEnd": 0.474,
+      "tone": {
+        "target": "T3_full",
+        "producedChao": [
+          2.14,
+          1.74,
+          1.51,
+          1.55,
+          1.35,
+          0.94,
+          1.45,
+          2.48,
+          3.18,
+          3.85
+        ],
+        "targetChao": [
+          2.0,
+          1.81,
+          1.63,
+          1.44,
+          1.26,
+          1.07,
+          1.5,
+          2.33,
+          3.17,
+          4.0
+        ],
+        "nearest": "T3_full",
+        "rmse": 0.111,
+        "score": 94,
+        "issues": [],
+        "voicedRatio": 0.92
+      },
+      "vowel": {
+        "target": "u",
+        "formants": {
+          "F1": 300,
+          "F2": 1090,
+          "F3": 2419
+        },
+        "f2n": 0.2,
+        "f3ratio": 0.82,
+        "heardAs": "u",
+        "glide": false,
+        "confidence": 0.83
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,66 @@
+{
+  "promptId": "qu",
+  "durationSec": 1.17,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "qu4",
+        "surfaceTone": 4,
+        "variant": "T4",
+        "vowel": "y"
+      },
+      "start": 0.25,
+      "end": 0.57,
+      "vowelStart": 0.346,
+      "vowelEnd": 0.474,
+      "tone": {
+        "target": "T4",
+        "producedChao": [
+          5.14,
+          4.48,
+          4.0,
+          3.78,
+          3.31,
+          2.65,
+          2.28,
+          2.03,
+          1.46,
+          0.85
+        ],
+        "targetChao": [
+          5.0,
+          4.56,
+          4.11,
+          3.67,
+          3.22,
+          2.78,
+          2.33,
+          1.89,
+          1.44,
+          1.0
+        ],
+        "nearest": "T4",
+        "rmse": 0.111,
+        "score": 94,
+        "issues": [],
+        "voicedRatio": 0.92
+      },
+      "vowel": {
+        "target": "y",
+        "formants": {
+          "F1": 300,
+          "F2": 1989,
+          "F3": 2478
+        },
+        "f2n": 0.82,
+        "f3ratio": 0.84,
+        "heardAs": "y",
+        "glide": false,
+        "confidence": 0.6
+      }
+    }
+  ],
+  "warnings": []
+}

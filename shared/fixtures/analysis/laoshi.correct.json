@@ -1,0 +1,98 @@
+{
+  "promptId": "laoshi",
+  "durationSec": 1.53,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "lao3",
+        "surfaceTone": 3,
+        "variant": "T3_half",
+        "sandhiNote": "half third tone: stays low"
+      },
+      "start": 0.25,
+      "end": 0.57,
+      "vowelStart": 0.346,
+      "vowelEnd": 0.522,
+      "tone": {
+        "target": "T3_half",
+        "producedChao": [
+          1.96,
+          2.04,
+          1.78,
+          1.52,
+          1.59,
+          1.58,
+          1.26,
+          1.1,
+          1.21,
+          1.1
+        ],
+        "targetChao": [
+          2.0,
+          1.89,
+          1.78,
+          1.67,
+          1.56,
+          1.44,
+          1.33,
+          1.22,
+          1.11,
+          1.0
+        ],
+        "nearest": "T3_half",
+        "rmse": 0.103,
+        "score": 95,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    },
+    {
+      "index": 1,
+      "target": {
+        "index": 1,
+        "pinyin": "shi1",
+        "surfaceTone": 1,
+        "variant": "T1"
+      },
+      "start": 0.61,
+      "end": 0.93,
+      "vowelStart": 0.706,
+      "vowelEnd": 0.882,
+      "tone": {
+        "target": "T1",
+        "producedChao": [
+          5.1,
+          5.1,
+          4.88,
+          4.93,
+          5.14,
+          5.03,
+          4.85,
+          5.01,
+          5.15,
+          4.95
+        ],
+        "targetChao": [
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ],
+        "nearest": "T1",
+        "rmse": 0.103,
+        "score": 95,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    }
+  ],
+  "warnings": []
+}

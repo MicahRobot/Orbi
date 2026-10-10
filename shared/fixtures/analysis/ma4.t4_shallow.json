@@ -1,0 +1,189 @@
+{
+  "promptId": "ma4",
+  "durationSec": 3.42,
+  "syllables": [
+    {
+      "index": 0,
+      "target": {
+        "index": 0,
+        "pinyin": "ma1",
+        "surfaceTone": 1,
+        "variant": "T1"
+      },
+      "start": 0.25,
+      "end": 0.63,
+      "vowelStart": 0.364,
+      "vowelEnd": 0.573,
+      "tone": {
+        "target": "T1",
+        "producedChao": [
+          5.02,
+          4.85,
+          5.02,
+          5.15,
+          4.95,
+          4.87,
+          5.09,
+          5.11,
+          4.88,
+          4.92
+        ],
+        "targetChao": [
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ],
+        "nearest": "T1",
+        "rmse": 0.102,
+        "score": 95,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    },
+    {
+      "index": 1,
+      "target": {
+        "index": 1,
+        "pinyin": "ma2",
+        "surfaceTone": 2,
+        "variant": "T2"
+      },
+      "start": 0.98,
+      "end": 1.36,
+      "vowelStart": 1.094,
+      "vowelEnd": 1.303,
+      "tone": {
+        "target": "T2",
+        "producedChao": [
+          2.89,
+          2.75,
+          2.9,
+          3.13,
+          3.26,
+          3.71,
+          4.19,
+          4.33,
+          4.54,
+          5.07
+        ],
+        "targetChao": [
+          3.0,
+          2.83,
+          2.76,
+          3.08,
+          3.4,
+          3.72,
+          4.04,
+          4.36,
+          4.68,
+          5.0
+        ],
+        "nearest": "T2",
+        "rmse": 0.105,
+        "score": 95,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    },
+    {
+      "index": 2,
+      "target": {
+        "index": 2,
+        "pinyin": "ma3",
+        "surfaceTone": 3,
+        "variant": "T3_full"
+      },
+      "start": 1.71,
+      "end": 2.09,
+      "vowelStart": 1.824,
+      "vowelEnd": 2.033,
+      "tone": {
+        "target": "T3_full",
+        "producedChao": [
+          1.86,
+          1.88,
+          1.76,
+          1.35,
+          1.16,
+          1.19,
+          1.57,
+          2.19,
+          3.13,
+          4.15
+        ],
+        "targetChao": [
+          2.0,
+          1.81,
+          1.63,
+          1.44,
+          1.26,
+          1.07,
+          1.5,
+          2.33,
+          3.17,
+          4.0
+        ],
+        "nearest": "T3_full",
+        "rmse": 0.111,
+        "score": 94,
+        "issues": [],
+        "voicedRatio": 0.92
+      }
+    },
+    {
+      "index": 3,
+      "target": {
+        "index": 3,
+        "pinyin": "ma4",
+        "surfaceTone": 4,
+        "variant": "T4"
+      },
+      "start": 2.44,
+      "end": 2.82,
+      "vowelStart": 2.554,
+      "vowelEnd": 2.763,
+      "tone": {
+        "target": "T4",
+        "producedChao": [
+          4.6,
+          4.5,
+          4.3,
+          4.1,
+          3.9,
+          3.7,
+          3.5,
+          3.3,
+          3.1,
+          3.0
+        ],
+        "targetChao": [
+          5.0,
+          4.56,
+          4.11,
+          3.67,
+          3.22,
+          2.78,
+          2.33,
+          1.89,
+          1.44,
+          1.0
+        ],
+        "nearest": "T4",
+        "rmse": 1.086,
+        "score": 46,
+        "issues": [
+          "t4_shallow"
+        ],
+        "voicedRatio": 0.92
+      }
+    }
+  ],
+  "warnings": []
+}
