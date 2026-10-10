@@ -116,7 +116,9 @@ function vowelInsights(s: SyllableAnalysis, char: string, cal: AudioCalibration,
     headline: tongueCard?.title ?? (you === null ? "Tongue: can't tell without the camera" : tongueWrong && anyFix ? `Bring your tongue ${wantFront ? "forward" : "back"}` : `Tongue ${wantFront ? "forward" : "back"}: right for ${sound[target]}`),
     what: you === null
       ? `It sounded like ${sound[v.heardAs]}, which rounded lips or a pulled-back tongue can both cause. With your lips in view I can tell which.`
-      : `From the sound, your tongue was probably ${where(isFront!)}. ${sound[target]} needs it ${where(wantFront)}.${close}`,
+      : tongueWrong
+        ? `From the sound, your tongue was probably ${where(isFront!)}. ${sound[target]} needs it ${where(wantFront)}.${close}`
+        : `From the sound, your tongue was ${where(isFront!)}, which is right for ${sound[target]}.${close}`,
     how: tongueCard ? [tongueCard.coaching ?? tongueCard.instruction, "Say “ee” and freeze your tongue there, then change only your lips."]
       : tongueWrong && anyFix ? [`Say “ee”, keep your tongue exactly there, and only then shape your lips.`] : [],
     issueId: tongueCard?.diagnosis.issueId, note: tongueCard?.l1Note,
