@@ -9,6 +9,7 @@ import { loadAttempts, loadProfile, saveAttempt, saveProfile } from "../data/sto
 import { diagnose } from "../diagnosis";
 import { FIXTURES, fixtureAnalysis, fixtureCalibration, fixtureFace } from "../fixtures";
 import { Home } from "./Home";
+import { Landing } from "./Landing";
 import { Onboarding } from "./Onboarding";
 import { Practice } from "./Practice";
 import { Results } from "./Results";
@@ -29,6 +30,7 @@ export interface Attempt {
 
 type Screen =
   | { name: "loading" }
+  | { name: "landing" }
   | { name: "onboarding"; redo?: Profile }
   | { name: "home" }
   | { name: "practice"; promptId: string }
@@ -48,7 +50,7 @@ export default function App() {
     void Promise.all([loadProfile(), loadAttempts()]).then(([p, a]) => {
       setProfile(p);
       setAttempts(a);
-      setScreen(p ? { name: "home" } : { name: "onboarding" });
+      setScreen(p ? { name: "home" } : { name: "landing" });
     });
   }, []);
 
@@ -97,13 +99,16 @@ export default function App() {
 
   switch (screen.name) {
     case "loading":
-      return <main className="page center"><span className="spinner" aria-label="Loading" /></main>;
+      return <main className="center"><span className="spinner dark" aria-label="Loading" /></main>;
+    case "landing":
+      return <Landing onStart={() => setScreen({ name: "onboarding" })} onDemo={() => demo(0)} />;
     case "onboarding":
-      return <Onboarding redo={screen.redo} onDone={saveAndGoHome} />;
+      return <Onboarding redo={screen.redo} onDone={saveAndGoHome} onExit={() => setScreen(screen.redo ? { name: "home" } : { name: "landing" })} />;
     case "home":
       return (
         <Home attempts={attempts} onPractice={(promptId) => setScreen({ name: "practice", promptId })} onDemo={() => demo(0)}
-          onRecalibrate={() => setScreen({ name: "onboarding", redo: profile ?? { l1 } })} />
+          onRecalibrate={() => setScreen({ name: "onboarding", redo: profile ?? { l1 } })}
+          onStartOver={() => setScreen({ name: "landing" })} />
       );
     case "practice": {
       const prompt = promptById(screen.promptId);
@@ -115,14 +120,15 @@ export default function App() {
     case "results": {
       const { attempt, demoStep } = screen;
       return (
-        <Results attempt={attempt}
+        // Demo fixtures were generated against the sample calibration; live takes use the learner's own.
+        <Results attempt={attempt} calibration={demoStep === undefined ? (profile?.calibration ?? fixtureCalibration).audio : fixtureCalibration.audio}
           onRetry={() => setScreen({ name: "practice", promptId: attempt.prompt.id })}
           onNext={() => setScreen({ name: "practice", promptId: nextPromptId(attempt.prompt.id) })}
           onHome={() => setScreen({ name: "home" })}
           demo={demoStep === undefined ? undefined : {
             step: demoStep, total: DEMO.length, beat: DEMO[demoStep].beat,
             onNext: demoStep + 1 < DEMO.length ? () => demo(demoStep + 1) : undefined,
-            onExit: () => setScreen({ name: "home" }),
+            onExit: () => setScreen(profile ? { name: "home" } : { name: "landing" }),
           }} />
       );
     }
