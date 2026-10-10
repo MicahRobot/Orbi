@@ -120,6 +120,8 @@ p { margin: 0; }
 .landing { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 48px; padding: 32px clamp(20px, 4vw, 48px) 72px; text-align: center; }
 .landing h1 { max-width: 860px; font-size: clamp(52px, 8vw, 112px); line-height: .92; letter-spacing: -0.045em; }
 .landing h1 em { font-style: normal; color: var(--purple); }
+.lang-roll { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: .08em; }
+.lang-roll span { display: inline-block; animation: rollUp 420ms cubic-bezier(.2, .8, .2, 1) both; }
 .landing .lead { max-width: 500px; font-size: 19px; color: var(--ink-2); text-wrap: pretty; }
 .hero-card { width: 100%; max-width: 560px; background: var(--card); border-radius: 28px; padding: 24px 24px 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; text-align: left; animation: floaty 6s ease-in-out infinite; }
 .hero-card .say { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -231,6 +233,7 @@ th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes pulse { 0%, 100% { box-shadow: 0 6px 0 #C2421F, 0 0 0 0 rgba(255, 107, 74, .45); } 50% { box-shadow: 0 6px 0 #C2421F, 0 0 0 16px rgba(255, 107, 74, 0); } }
+@keyframes rollUp { from { opacity: 0; transform: translateY(70%); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .enter { animation: fadeUp 360ms both; }
 

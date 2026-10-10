@@ -15,11 +15,19 @@ const HERO = [
   return { ...h, syllables: a.syllables.map((s) => ({ label: toneMarks(s.target.pinyin), target: s.tone.targetChao, you: s.tone.producedChao })) };
 });
 
+const LANGUAGES = ["Mandarin", "Cantonese", "Vietnamese", "Thai", "Yoruba"];
+
 export function Landing({ onStart, onDemo }: { onStart: () => void; onDemo: () => void }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = setInterval(() => setI((n) => (n + 1) % HERO.length), 3600);
+    return () => clearInterval(id);
+  }, []);
+  const [lang, setLang] = useState(0);
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(() => setLang((n) => (n + 1) % LANGUAGES.length), 2200);
     return () => clearInterval(id);
   }, []);
   const h = HERO[i];
@@ -28,7 +36,9 @@ export function Landing({ onStart, onDemo }: { onStart: () => void; onDemo: () =
       <TopBar><button className="btn ghost" onClick={onDemo}>Watch the demo</button></TopBar>
       <main className="landing">
         <div className="stack enter" style={{ alignItems: "center", gap: 22 }}>
-          <h1>Find the <em>melody</em> of Mandarin.</h1>
+          <h1 aria-label="Find the melody of Mandarin.">
+            Find the <em>melody</em> of <span className="lang-roll" aria-hidden="true"><span key={lang}>{LANGUAGES[lang]}</span></span>.
+          </h1>
           <p className="lead">Say a word. See your pitch next to a native speaker's, and what your lips and tongue are doing. Adjust until it sounds right.</p>
           <button className="btn primary big" onClick={onStart} autoFocus>Get started</button>
         </div>
