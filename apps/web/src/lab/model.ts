@@ -5,6 +5,7 @@ import type { AudioAnalysis, AudioCalibration, FaceCalibration, FaceFeatures, Fa
 import { diagnose } from "../diagnosis";
 import { type Insight, insightsFor } from "../insights";
 import { hanziOf, lightsFor, summarize, toneMarks, type LightStatus, type Ring } from "../ui/scoring";
+import { type Correction, type KeyPoint, corrections, keyPoints } from "./pitch";
 
 export interface Take {
   id: number;
@@ -34,9 +35,16 @@ export interface CardView {
   note?: string;
   lips?: { you: number; lo: number; hi: number };
   tongue?: { target: [number, number]; you: [number, number] | null };   // x: 0 front → 1 back, y: 0 high → 1 low
+  pitch?: { you: number[]; native: number[] };   // tone levels 1–5, for the "how to move" morph
 }
 
-export interface SyllableView { label: string; native: number[]; you: number[]; flag: boolean }
+export interface SyllableView {
+  label: string;
+  native: number[];                // 0–1 (tone level 0.5–5.5)
+  you: number[];
+  flag: boolean;                   // diagnose() flagged this syllable's pitch
+  corrections: Correction[];       // arrows, on flagged syllables only (tone levels)
+}
 
 export interface TakeView {
   match: number;
@@ -49,6 +57,7 @@ export interface TakeView {
   compact: CardView[];
   timeline: { series: [number, number][][]; windows: { a: number; b: number; label: string }[] } | null;
   rows: { syl: string; score: number; rmse: string; heard: string; formants: string; roundness: string }[];
+  keyPoints: { label: string; points: KeyPoint[] }[];
 }
 
 const AREA: Record<Insight["area"], string> = { pitch: "Pitch", lips: "Lips", tongue: "Tongue", jaw: "Jaw" };
@@ -60,6 +69,7 @@ const unit = (level: number) => Math.min(1, Math.max(0, (level - 0.5) / 5));   /
 const LIP_ZONE = { spread: { lo: 0, hi: 0.3 }, rounded: { lo: 0.6, hi: 1 } };
 
 export function cardView(x: Insight, chars: string[], pinyin: string[]): CardView {
+  const pitch = x.area === "pitch" && x.status !== "good" && x.pitch && x.pitch.produced.length > 1 ? { you: x.pitch.produced, native: x.pitch.target } : undefined;
   const i = x.syllableIndex;
   return {
     key: `${i}-${x.area}`,
@@ -75,6 +85,7 @@ export function cardView(x: Insight, chars: string[], pinyin: string[]): CardVie
       target: [1 - x.tongue.target.front, 1 - x.tongue.target.height],
       you: x.tongue.you && [1 - x.tongue.you.front, 1 - x.tongue.you.height],
     },
+    ...(pitch && { pitch }),
   };
 }
 
@@ -114,18 +125,24 @@ export function viewOf(take: Take): TakeView {
     chips: lightsFor(prompt, cards).map((l) => (l.part === "Lips" && l.status === "good" && !lipsSeen
       ? { area: l.part, mark: "unsure" as const, word: "Not seen" }
       : { area: l.part, mark: l.status, word: CHIP_WORD[l.status] })),
-    pitch: audio.syllables.map((s, i) => ({
-      label: `${chars[i] ?? ""} ${toneMarks(s.target.pinyin)}`.trim(),
-      native: s.tone.targetChao.map(unit),
-      you: s.tone.producedChao.map(unit),
-      flag: pitchMark(i) === "fix" || pitchMark(i) === "tip",
-    })),
+    pitch: audio.syllables.map((s, i) => {
+      const flag = pitchMark(i) === "fix" || pitchMark(i) === "tip";
+      return {
+        label: `${chars[i] ?? ""} ${toneMarks(s.target.pinyin)}`.trim(),
+        native: s.tone.targetChao.map(unit),
+        you: s.tone.producedChao.map(unit),
+        flag,
+        // Arrows only where diagnose() already flagged the pitch, so they never contradict the verdict.
+        corrections: flag ? corrections(s.tone.producedChao, s.tone.targetChao) : [],
+      };
+    }),
     callout: sandhi
       ? `${chars[sandhi.index] ?? ""} changes tone here (${sandhi.target.sandhiNote}).${pitchMark(sandhi.index) === "good" ? " You did it." : ""}`
       : null,
     main: views.filter((c) => c.status === "fix" || c.status === "tip"),
     compact: views.filter((c) => c.status === "good" || c.status === "unsure"),
     timeline: timelineOf(take.frames, audio, take.faceCal, chars),
+    keyPoints: audio.syllables.map((s, i) => ({ label: `${chars[i] ?? ""} ${toneMarks(s.target.pinyin)}`.trim(), points: keyPoints(s.tone.producedChao, s.tone.targetChao) })),
     rows: audio.syllables.map((s, i) => {
       const f = take.face.find((x) => x.syllableIndex === s.index);
       const v = s.vowel;

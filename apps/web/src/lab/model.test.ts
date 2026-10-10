@@ -44,6 +44,10 @@ describe("Lab view of a take", () => {
 
   it("妈麻马骂 with a dipped 麻 flags only 麻's pitch", () => {
     const v = viewOf(take("ma4", "t2_dip"));
+    expect(v.pitch.map((s) => s.corrections.length)).toEqual([0, 1, 0, 0]);
+    expect(v.pitch[1].corrections[0].label).toBe("Rise sooner");
+    expect(v.main[0].pitch?.native).toHaveLength(10);
+    expect(v.keyPoints[1].points.find((k) => k.name === "Lowest point at")?.verdict).toBe("too late");
     expect(v.pitch.map((s) => s.flag)).toEqual([false, true, false, false]);
     expect(v.pitch[1].label).toBe("麻 má");
     expect(v.main[0]).toMatchObject({ area: "Pitch", headline: "Rise right away" });
