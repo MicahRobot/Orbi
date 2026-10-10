@@ -1,7 +1,7 @@
 """Orbi audio service. Run from services/audio: uvicorn app.main:app --reload --port 8000 --env-file .env
 
 Lane B owns this service. With AUDIO_MODE=fixture (the default) /analyze and /calibrate/audio answer
-from shared/fixtures. With AUDIO_MODE=real, /analyze runs the pipeline in analyze.py (tones; vowels to come).
+from shared/fixtures. With AUDIO_MODE=real, /analyze runs analyze.py and /calibrate/audio runs vowel.calibrate.
 """
 import json
 import os
@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from .analyze import analyze as analyze_audio
 from .coach import coach as coach_tips
 from .models import AnalyzeMeta, AudioAnalysis, AudioCalibration, CoachRequest, CoachResponse
+from .vowel import calibrate
 
 FIXTURES = Path(__file__).resolve().parents[3] / "shared" / "fixtures"
 MODE = os.getenv("AUDIO_MODE", "fixture")
@@ -26,10 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def not_built():
-    raise HTTPException(501, "Real analysis isn't built yet: see docs/PERSON_B.md, or set AUDIO_MODE=fixture")
 
 
 @app.get("/health")
@@ -62,7 +59,10 @@ async def calibrate_audio(
     oo: UploadFile = File(...), ah: UploadFile = File(...),
 ):
     if MODE != "fixture":
-        not_built()
+        try:
+            return calibrate(*[await f.read() for f in (glide, ee, oo, ah)])
+        except ValueError as e:
+            raise HTTPException(422, f"Calibration didn't work: {e}")
     return json.loads((FIXTURES / "calibration.json").read_text())["audio"]
 
 
