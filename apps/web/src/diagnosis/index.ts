@@ -1,18 +1,9 @@
 // Lane B owns this folder. These two signatures are what the UI calls: keep them stable.
-// Both are MOCKS so the screens can be built now. Real versions: SPEC.md B1 (sandhi) and Module E (rules).
-import type { AudioAnalysis, FaceSummary, FeedbackItem, L1Code, PromptItem, SyllableTarget, Tone, ToneVariant } from "@shared/contracts/types";
+// targetsFor is real (sandhi.ts, SPEC.md B1); diagnose is still a MOCK until Module E lands.
+import type { AudioAnalysis, FaceSummary, FeedbackItem, L1Code, PromptItem } from "@shared/contracts/types";
 import { l1NoteFor } from "../content/l1";
 
-const VARIANT: Record<Tone, ToneVariant> = { 1: "T1", 2: "T2", 3: "T3_full", 4: "T4", 5: "T5" };
-
-/** Written pinyin to surface tone targets. MOCK: no sandhi yet. */
-export function targetsFor(prompt: PromptItem): SyllableTarget[] {
-  return prompt.pinyin.map((pinyin, index) => {
-    const tone = Number(pinyin.at(-1)) as Tone;
-    const vowel = prompt.vowelTargets?.[index] ?? undefined;
-    return { index, pinyin, surfaceTone: tone, variant: VARIANT[tone], ...(vowel && { vowel }) };
-  });
-}
+export { targetsFor } from "./sandhi";
 
 /** Audio and face evidence to at most two fix cards, with an L1 note where one applies.
  *  MOCK: one generic card per tone issue, no vowel rules. */

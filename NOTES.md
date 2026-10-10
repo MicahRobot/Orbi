@@ -25,3 +25,4 @@ Calls made where the spec was ambiguous. Change one by editing it here in the sa
 - **`nearest`** compares T1, T2, T3_full, T3_half and T4 only. T5's height depends on the previous tone.
 - **laoshi.** lao3 → `T3_half` gets a `sandhiNote` so the UI can explain the half third tone.
 - **Service fixture mode.** `/analyze` returns `<promptId>.correct.json` whatever audio it receives; the web app's own fixture mode is the way to replay wrong attempts.
+- **Sandhi (B1) details.** 不 and 一 are found by their hanzi, not the pinyin (yi1 can be other words). 一 before a neutral tone is left alone. `reading: "list"` skips all sandhi, not only the half third tone. Notes read "不 before tone 4 → bú", "一 before tone N → yí/yì", "3+3 → 2+3", "half third tone: stays low"; a 3+3+3 run gives "3+3 → 2+3" on both changed syllables.

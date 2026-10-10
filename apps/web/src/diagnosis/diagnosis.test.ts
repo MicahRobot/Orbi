@@ -7,10 +7,10 @@ import { FIXTURES, fixtureAnalysis, fixtureFace } from "../fixtures";
 
 const prompt = (id: string) => PROMPTS.find((p) => p.id === id)!;
 
-describe.skip("targetsFor (SPEC.md B1: sandhi)", () => {
+describe("targetsFor (SPEC.md B1: sandhi)", () => {
   it.each(PROMPTS.map((p) => [p.id, p] as const))("%s gives the surface tones in its fixture", (_, p) => {
-    const expected = fixtureAnalysis(p.id, "correct").syllables.map((s) => [s.target.surfaceTone, s.target.variant]);
-    expect(targetsFor(p).map((t) => [t.surfaceTone, t.variant])).toEqual(expected);
+    const expected = fixtureAnalysis(p.id, "correct").syllables.map((s) => s.target);
+    expect(targetsFor(p)).toEqual(expected);
   });
 });
 
