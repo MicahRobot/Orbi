@@ -1,5 +1,4 @@
-// Acceptance tests for lane B, written from the fixtures. They are skipped while
-// diagnosis/index.ts is a mock: remove each `.skip` as the real version lands.
+// Acceptance tests for lane B, written from the fixtures.
 import { describe, expect, it } from "vitest";
 import { diagnose, targetsFor } from ".";
 import { PROMPTS } from "../content/prompts";
@@ -14,7 +13,7 @@ describe("targetsFor (SPEC.md B1: sandhi)", () => {
   });
 });
 
-describe.skip("diagnose (SPEC.md Module E)", () => {
+describe("diagnose (SPEC.md Module E)", () => {
   it.each(FIXTURES.map((f) => [`${f.promptId}.${f.variant}`, f] as const))("%s gives the scripted fix cards", (_, f) => {
     const cards = diagnose(prompt(f.promptId), fixtureAnalysis(f.promptId, f.variant), fixtureFace(f.promptId, f.variant));
     // Correct syllables get no card; info-only cards (severity 1) don't count as fixes.
