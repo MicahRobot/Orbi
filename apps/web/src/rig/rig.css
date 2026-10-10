@@ -32,3 +32,6 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 pre { overflow: auto; max-height: 320px; font-size: 12px; }
 label.file input { margin-left: 6px; }
 .cam[hidden] { display: none; }
+.insights { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.insight { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.insight p { margin: 4px 0; } .insight ol { margin: 4px 0; padding-left: 20px; }

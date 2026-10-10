@@ -8,9 +8,12 @@ import { LEVEL_MESSAGES, meterLevel } from "../capture/wav";
 import { L1S } from "../content/l1";
 import { PROMPTS } from "../content/prompts";
 import { diagnose } from "../diagnosis";
-import { EYE_L, EYE_R, LIP_BOTTOM, LIP_TOP, MOUTH_L, MOUTH_R, NOSE_TIP, type Point, features, pose, roundness, summarize } from "../face/features";
-import { type Frame, LIP_EDGES, startFaceLoop } from "../face/landmarker";
+import { LIP_BOTTOM, LIP_TOP, MOUTH_L, MOUTH_R, features, roundness, summarize } from "../face/features";
+import { type Frame, LIP_EDGES } from "../face/landmarker";
+import { type FaceSession, centralPose, startFaceSession } from "../face/session";
 import { fixtureAnalysis, fixtureCalibration } from "../fixtures";
+import { type Insight, insightsFor } from "../insights";
+import { TongueMap } from "../insights/TongueMap";
 
 type Step = "glide" | "ee" | "oo" | "ah";
 const STEPS: { step: Step; sec: number; say: string }[] = [
@@ -37,7 +40,7 @@ function download(data: Blob | object, name: string) {
 
 interface Result {
   promptId: string; name: string; wav: Blob; url: string; problem: string | null;
-  audio?: AudioAnalysis; face: FaceSummary[]; frames: FaceFeatures[]; cards: FeedbackItem[]; error?: string;
+  audio?: AudioAnalysis; face: FaceSummary[]; frames: FaceFeatures[]; cards: FeedbackItem[]; insights: Insight[]; error?: string;
 }
 
 export default function Rig() {
@@ -47,9 +50,8 @@ export default function Rig() {
   const [startError, setStartError] = useState("");
   const [faceStatus, setFaceStatus] = useState("off");
   const [service, setService] = useState<boolean | null>(null);
-  const live = useRef<{ f: FaceFeatures; hint: string; fps: number }>({ f: features(0, undefined, undefined), hint: "", fps: 0 });
+  const face = useRef<FaceSession | null>(null);
   const [, setTick] = useState(0);
-  const buffer = useRef<FaceFeatures[] | null>(null);       // frames (t = performance.now()) while recording
   const [level, setLevel] = useState(0);   // 0–1 meter
   const [busy, setBusy] = useState("");
   // The service answers from shared/fixtures unless started with AUDIO_MODE=real; /health can't tell, the answers can.
@@ -79,33 +81,12 @@ export default function Rig() {
       v.srcObject = s;
       await v.play();
       setFaceStatus("loading model…");
-      const seen: number[] = [];
-      let last = performance.now(), frames = 0;
-      await startFaceLoop(v, (fr) => {
-        const f = features(fr.now, fr.points, fr.shapes);
-        if (buffer.current) buffer.current.push(f);
-        seen.push(f.detected ? 1 : 0); if (seen.length > 90) seen.shift();
-        frames++;
-        if (fr.now - last > 1000) { live.current.fps = Math.round((frames * 1000) / (fr.now - last)); frames = 0; last = fr.now; }
-        live.current.f = f;
-        live.current.hint = qualityHint(fr, seen);
-        draw(fr);
-      });
+      face.current = await startFaceSession(v, draw);
       setFaceStatus("tracking");
     } catch (e) {
       setStartError(e instanceof Error ? e.message : String(e));
       setFaceStatus("off");
     }
-  }
-
-  function qualityHint(fr: Frame, seen: number[]): string {
-    if (seen.reduce((a, b) => a + b, 0) / seen.length < 0.8) return "Keep your face in view";
-    const p = fr.points;
-    if (!p) return "";
-    const eye = Math.hypot(p[EYE_L].x - p[EYE_R].x, p[EYE_L].y - p[EYE_R].y);
-    if (eye < 60) return "Move a little closer";
-    if (Math.abs(p[NOSE_TIP].x - (p[EYE_L].x + p[EYE_R].x) / 2) > 0.15 * eye) return "Face the camera";
-    return "";
   }
 
   function draw(fr: Frame) {
@@ -127,11 +108,10 @@ export default function Rig() {
 
   /** Records audio while buffering face frames; returns PCM and frames re-timed to the audio clock. */
   async function take(maxSec: number, autoStop: boolean) {
-    buffer.current = [];
+    face.current?.begin();
     const r = await record(stream!, { maxSec, silenceMs: autoStop ? 600 : undefined, onLevel: (rms) => setLevel(meterLevel(rms)) });
     const { wav, t0, problem } = await r.done;
-    const frames = (buffer.current ?? []).map((f) => ({ ...f, t: (f.t - t0) / 1000 }));
-    buffer.current = null;
+    const frames = face.current?.end(t0) ?? [];
     setLevel(0);
     return { wav, problem, frames };
   }
@@ -140,9 +120,7 @@ export default function Rig() {
     setBusy(step); setCalError("");
     try {
       const { wav, frames } = await take(sec, false);
-      // Face pose from the central 40% of the take, like the audio side.
-      const mid = frames.filter((f) => f.t >= 0.3 * sec && f.t <= 0.7 * sec);
-      setTakes((t) => ({ ...t, [step]: { wav, pose: pose(mid) } }));
+      setTakes((t) => ({ ...t, [step]: { wav, pose: centralPose(frames, sec) } }));
     } finally { setBusy(""); }
   }
 
@@ -164,13 +142,14 @@ export default function Rig() {
     const prompt = PROMPTS.find((p) => p.id === promptId)!;
     const n = (counter.current[`${promptId}.${variant}`] ?? 0) + 1;
     counter.current[`${promptId}.${variant}`] = n;
-    const base: Result = { promptId, name: `${promptId}.${variant}.${n}`, wav, url: URL.createObjectURL(wav), problem, face: [], frames, cards: [] };
+    const base: Result = { promptId, name: `${promptId}.${variant}.${n}`, wav, url: URL.createObjectURL(wav), problem, face: [], frames, cards: [], insights: [] };
     try {
       const audio = await analyze(prompt, wav, { audio: audioCal ?? fixtureCalibration.audio, face: fixtureCalibration.face, createdAt: "" });
       setFixtureMode(JSON.stringify(audio) === JSON.stringify(fixtureAnalysis(promptId, "correct")));
       const face = frames.length && faceCal
         ? summarize(frames, audio.syllables.map((s) => ({ index: s.index, start: s.vowelStart, end: s.vowelEnd })), faceCal) : [];
-      setResults((r) => [{ ...base, audio, face, cards: diagnose(prompt, audio, face, l1) }, ...r]);
+      const cards = diagnose(prompt, audio, face, l1);
+      setResults((r) => [{ ...base, audio, face, cards, insights: insightsFor(prompt, audio, face, cards, audioCal ?? fixtureCalibration.audio) }, ...r]);
     } catch (e) {
       setResults((r) => [{ ...base, error: e instanceof Error ? e.message : String(e) }, ...r]);
     }
@@ -191,7 +170,8 @@ export default function Rig() {
     try { await run(promptId, file, [], null); } finally { setBusy(""); }
   }
 
-  const f = live.current.f;
+  const live = face.current?.live() ?? { features: features(0, undefined, undefined), hint: "", fps: 0 };
+  const f = live.features;
   const prompt = PROMPTS.find((p) => p.id === promptId)!;
   const allTakes = STEPS.every((s) => takes[s.step]);
 
@@ -201,7 +181,7 @@ export default function Rig() {
       {fixtureMode && <p className="panel bad"><b>The audio service is in fixture mode</b>, so results are canned sample data. Restart it with AUDIO_MODE=real in services/audio/.env (and --env-file .env).</p>}
       <p className="row">
         <span className={service ? "ok" : "bad"}>Audio service: {service === null ? "checking…" : service ? "up" : "down (start it on :8000)"}</span>
-        <span>Face: {faceStatus}{live.current.fps ? ` · ${live.current.fps} fps` : ""}</span>
+        <span>Face: {faceStatus}{live.fps ? ` · ${live.fps} fps` : ""}</span>
         <span className={audioCal ? "ok" : "warn"}>Voice calibration: {audioCal ? "yours" : "sample (calibrate below)"}</span>
         <span className={faceCal ? "ok" : "warn"}>Face calibration: {faceCal ? "yours" : "none (roundness off)"}</span>
       </p>
@@ -214,7 +194,7 @@ export default function Rig() {
           <div className="stage">
             <video ref={video} playsInline muted />
             <canvas ref={canvas} />
-            {live.current.hint && <div className="hint">{live.current.hint}</div>}
+            {live.hint && <div className="hint">{live.hint}</div>}
           </div>
           <table className="live">
             <tbody>
@@ -236,7 +216,7 @@ export default function Rig() {
         <h2>2. Calibrate (about 10 seconds)</h2>
         <ol>
           <li>
-            Relax your face, mouth closed. <button disabled={!stream || !f.detected} onClick={() => { const p = { ...live.current.f }; setNeutral(p); }}>Capture neutral face</button>
+            Relax your face, mouth closed. <button disabled={!stream || !f.detected} onClick={() => { setNeutral({ ...f }); }}>Capture neutral face</button>
             {neutral && <span className="ok"> ✓</span>}
           </li>
           {STEPS.map(({ step, sec, say }) => (
@@ -309,6 +289,23 @@ function MouthTimeline({ frames, audio }: { frames: FaceFeatures[]; audio: Audio
   );
 }
 
+const STATUS = { good: ["ok", "✓ Good"], fix: ["bad", "✕ Fix"], tip: ["warn", "i Tip"], unsure: ["warn", "? Unsure"] } as const;
+
+function InsightView({ x }: { x: Insight }) {
+  const [cls, word] = STATUS[x.status];
+  return (
+    <div className="insight">
+      <p className="small"><b className={cls}>{word}</b> · syllable {x.syllableIndex} · {x.area}</p>
+      <p><b>{x.headline}</b></p>
+      <p className="small">{x.what}</p>
+      {x.note && <p className="small"><em>{x.note}</em></p>}
+      {x.how.length > 0 && <ol className="small">{x.how.map((h, i) => <li key={i}>{h}</li>)}</ol>}
+      {x.tongue && <TongueMap you={x.tongue.you} target={x.tongue.target} />}
+      {x.lips && <Bar value={x.lips.roundness} left="spread" right="rounded" />}
+    </div>
+  );
+}
+
 function ResultView({ r }: { r: Result }) {
   return (
     <section className="panel">
@@ -324,6 +321,8 @@ function ResultView({ r }: { r: Result }) {
       {r.audio && (
         <>
           {r.audio.warnings.length > 0 && <p className="warn">Service warnings: {r.audio.warnings.join(", ")}</p>}
+          <h3>Insights</h3>
+          <div className="insights">{r.insights.map((x, i) => <InsightView key={i} x={x} />)}</div>
           <h3>Fix cards from diagnose()</h3>
           {r.cards.length ? <ul>{r.cards.map((c, i) => (
             <li key={i}><b>sev {c.diagnosis.severity} · {c.diagnosis.articulator} · {c.diagnosis.issueId}</b> (syllable {c.diagnosis.syllableIndex}): {c.title}. {c.instruction}{c.l1Note && <em> [{c.l1Note}]</em>}</li>
