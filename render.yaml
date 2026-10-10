@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: orbi-audio
+    runtime: python
+    plan: free
+    rootDir: services/audio
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: AUDIO_MODE
+        value: real
+      - key: GEMINI_API_KEY
+        sync: false
