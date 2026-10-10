@@ -20,7 +20,8 @@ import { CalibrationDrawer } from "./CalibrationDrawer";
 import { serviceError } from "./errors";
 import { Camera, Chevron, Download, MarkIcon, Mic, Play, Speaker, Tune, Upload } from "./icons";
 import { cardsOf, relativeTime, viewOf, type CardView, type Take } from "./model";
-import { LipsBar, MouthTimeline, PitchChart, Ring, TongueMap } from "./viz";
+import { LivePitch } from "./LivePitch";
+import { KeyPoints, LipsBar, MouthTimeline, PitchChart, PitchMorph, Ring, TongueMap } from "./viz";
 
 const WORD_IDS = ["ma4", "nihao", "nv", "ni", "nu", "qu", "yu"];
 const WORDS = WORD_IDS.map((id) => PROMPTS.find((p) => p.id === id)!);
@@ -154,7 +155,7 @@ export default function Lab() {
     try {
       const ctx = new AudioContext();
       const an = ctx.createAnalyser();
-      an.fftSize = 1024;
+      an.fftSize = 2048;   // ~43 ms at 48 kHz: long enough for a low voice's period in live pitch
       ctx.createMediaStreamSource(s).connect(an);
       meter.current = { ctx, an, buf: new Float32Array(an.fftSize) };
     } catch { /* no meter, recording still works */ }
@@ -165,6 +166,8 @@ export default function Lab() {
     setMedia(s.getVideoTracks().length ? "live" : "micOnly");
     return s;
   }, [drawLips, stopMedia]);
+
+  const analyser = useCallback(() => (meter.current ? { an: meter.current.an, rate: meter.current.ctx.sampleRate } : null), []);
 
   const micLevel = useCallback(() => {
     const m = meter.current;
@@ -296,6 +299,11 @@ export default function Lab() {
     return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
   }, []);
 
+  // The live view stays frozen on screen while the take is analyzed (not for WAV uploads, which never had one).
+  const liveShown = useRef(false);
+  if (rec === "count" || rec === "listen") liveShown.current = true;
+  else if (rec !== "analyze") liveShown.current = false;
+
   const take = takes.find((t) => t.id === viewId) ?? takes[0];
   const busy = rec === "count" || rec === "listen" || rec === "analyze";
 
@@ -396,6 +404,10 @@ export default function Lab() {
               </div>
             )}
           </div>
+          {(rec === "count" || rec === "listen" || (rec === "analyze" && liveShown.current)) && (
+            <LivePitch prompt={prompt} f0={(cal ?? fixtureCalibration).audio.f0} tuned={!isSample(cal)} analyser={analyser}
+              listening={rec === "listen"} count={rec === "count" ? count : null} />
+          )}
           {take ? <Result key={`${take.id}-${l1}`} take={take} l1={l1} dim={rec === "analyze"} onAnalyzeFile={analyzeFile} />
             : <Empty prompt={prompt} onAnalyzeFile={analyzeFile} />}
         </section>
@@ -568,6 +580,10 @@ const Result = memo(function Result({ take, l1, dim, onAnalyzeFile }: { take: Ta
                 <tbody>{v.rows.map((r) => <tr key={r.syl}><td lang="zh-Hans">{r.syl}</td><td>{r.score}</td><td>{r.rmse}</td><td>{r.heard}</td><td>{r.formants}</td><td>{r.roundness}</td></tr>)}</tbody>
               </table>
             </div>
+            <div>
+              <span className="eyebrow">Pitch key points · you <i className="kp-key you" /> target <i className="kp-key target" /></span>
+              <KeyPoints rows={v.keyPoints} />
+            </div>
             <pre>{JSON.stringify({ audio: take.audio, face: take.face }, null, 2)}</pre>
             <div className="row">
               {take.wav && <button className="link-btn" onClick={() => download(take.wav!, `${name}.wav`)}><Download size={15} />Download WAV</button>}
@@ -593,7 +609,7 @@ function MainCard({ c, l1 }: { c: CardView; l1: L1Code }) {
       <div className="insight-meta"><StatusPill status={c.status} /><span>{c.area} · <span lang="zh-Hans" className="ink">{c.syl}</span></span></div>
       <h3 className="insight-title">{c.headline}</h3>
       <p className="measured">{c.measured}</p>
-      <div className={`insight-body ${c.tongue || c.lips ? "two" : ""}`}>
+      <div className={`insight-body ${c.tongue || c.lips || c.pitch ? "two" : ""}`}>
         {c.steps.length > 0 && (
           <div>
             <span className="eyebrow">Try this</span>
@@ -604,6 +620,7 @@ function MainCard({ c, l1 }: { c: CardView; l1: L1Code }) {
           <figcaption className="vizlegend"><span><i className="tgt" />Target</span><span><i className="you" />You</span></figcaption>
           {!c.tongue.you && <span className="overlay">Needs the camera to tell lips from tongue</span>}</figure>}
         {c.lips && <figure className="viz"><span className="eyebrow">Lip roundness</span><LipsBar lips={c.lips} /></figure>}
+        {c.pitch && <figure className="viz"><span className="eyebrow">How your voice should move</span><PitchMorph you={c.pitch.you} native={c.pitch.native} /></figure>}
       </div>
       {c.note && <p className="note"><b>For {lang && lang !== "Another language" ? `${lang} speakers` : "you"}.</b> {c.note}</p>}
     </article>

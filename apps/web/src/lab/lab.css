@@ -231,6 +231,36 @@ kbd { display: inline-block; padding: 0 7px; border-radius: 6px; border: 1px sol
 .timeline .winlbl { fill: var(--accent-ink); font-size: 14px; font-weight: 700; font-family: var(--hanzi); }
 .timeline path { fill: none; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; animation: draw 900ms var(--ease) both; }
 .timeline .s0 { stroke: var(--s0); } .timeline .s1 { stroke: var(--s1); } .timeline .s2 { stroke: var(--s2); }
+.chart .band { fill: rgba(31, 157, 107, .09); stroke: rgba(31, 157, 107, .22); stroke-width: 1; }
+.chart .off { fill: var(--you); stroke: #FFFFFF; stroke-width: 1.5; }
+.chart .fix-arrow line { stroke: var(--good); stroke-width: 2.5; stroke-linecap: round; }
+.chart .fix-arrow text { fill: var(--good-ink); font-size: 13px; font-weight: 700; paint-order: stroke; stroke: #FBFAFF; stroke-width: 4px; stroke-linejoin: round; }
+.chart .arrowhead { fill: var(--good); }
+.chart .native.ghost { opacity: .35; animation: none; stroke-dasharray: none; }
+.chart .you.still { animation: none; stroke-dasharray: none; }
+.chart .live-line { animation: none; stroke-dasharray: none; stroke-width: 4.5; }
+.chart .live-dot { fill: var(--you); stroke: #FFFFFF; stroke-width: 3; transition: opacity 120ms; }
+.live { border: 1.5px solid rgba(242, 106, 71, .35); }
+.live-hint { padding: 5px 12px; border-radius: 999px; font-size: 14px; font-weight: 700; background: var(--mute-soft); color: var(--mute-ink); transition: background 160ms var(--ease), color 160ms var(--ease); }
+.live-hint[data-tone="ok"] { background: var(--good-soft); color: var(--good-ink); }
+.live-hint[data-tone="move"] { background: var(--almost-soft); color: var(--almost-ink); }
+.live .faint { margin-top: 10px; }
+.morph { display: flex; flex-direction: column; gap: 8px; }
+.morph-controls { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
+.morph-controls input { flex: 1; accent-color: var(--accent); }
+.keypoints { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.kp { margin: 0; }
+.kp figcaption { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.kp-name { fill: var(--ink-2); font-size: 13px; font-weight: 600; }
+.kp-gap { stroke: rgba(242, 106, 71, .5); stroke-width: 4; stroke-linecap: round; }
+.kp-gap.ok { stroke: rgba(31, 157, 107, .45); }
+.kp-target { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 3; }
+.kp-you { fill: var(--you); stroke: #FFFFFF; stroke-width: 2; }
+.kp-verdict { fill: var(--fix-ink); font-size: 13px; font-weight: 700; }
+.kp-verdict.ok { fill: var(--good-ink); }
+.kp-key { display: inline-block; width: 10px; height: 10px; border-radius: 999px; margin: 0 6px 0 2px; vertical-align: -1px; }
+.kp-key.you { background: var(--you); }
+.kp-key.target { border: 1.5px dashed var(--accent); }
 .callout { margin-top: 12px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--almost-soft); color: var(--almost-ink); font-size: 14px; }
 .callout b { color: inherit; }
 
