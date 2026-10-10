@@ -1,7 +1,7 @@
 """Orbi audio service. Run from services/audio: uvicorn app.main:app --reload --port 8000 --env-file .env
 
-Lane B owns this service. Until the real pipeline lands (SPEC.md Modules A, B2-B5, C),
-/analyze and /calibrate/audio answer from shared/fixtures so lane A can integrate now.
+Lane B owns this service. With AUDIO_MODE=fixture (the default) /analyze and /calibrate/audio answer
+from shared/fixtures. With AUDIO_MODE=real, /analyze runs the pipeline in analyze.py (tones; vowels to come).
 """
 import json
 import os
@@ -12,11 +12,12 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
+from .analyze import analyze as analyze_audio
 from .coach import coach as coach_tips
 from .models import AnalyzeMeta, AudioAnalysis, AudioCalibration, CoachRequest, CoachResponse
 
 FIXTURES = Path(__file__).resolve().parents[3] / "shared" / "fixtures"
-MODE = os.getenv("AUDIO_MODE", "fixture")  # flip to "real" once segment/tone/vowel exist
+MODE = os.getenv("AUDIO_MODE", "fixture")
 
 app = FastAPI(title="Orbi audio service")
 app.add_middleware(
@@ -45,7 +46,10 @@ async def analyze(audio: UploadFile = File(...), meta: str = Form(...)):
     if not re.fullmatch(r"[a-z0-9_]+", m.promptId):  # promptId becomes a file name below
         raise HTTPException(422, "promptId must be lowercase letters, digits or _")
     if MODE != "fixture":
-        not_built()
+        try:
+            return analyze_audio(await audio.read(), m)
+        except ValueError as e:  # unreadable or empty WAV
+            raise HTTPException(422, f"Couldn't read the recording: {e}")
     path = FIXTURES / "analysis" / f"{m.promptId}.correct.json"
     if not path.exists():
         raise HTTPException(404, f"No fixture for prompt {m.promptId!r}")
