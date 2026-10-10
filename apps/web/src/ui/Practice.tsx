@@ -5,6 +5,9 @@ import type { AudioAnalysis, Calibration, FaceSummary, PromptItem } from "@share
 import { analyze, LIVE_AUDIO, LIVE_FACE } from "../api/audio";
 import { openMedia, record } from "../capture/recorder";
 import { LEVEL_MESSAGES, meterLevel } from "../capture/wav";
+import { usableFaceCalibration } from "../face/calibration";
+import { summarize } from "../face/features";
+import { type FaceSession, startFaceSession } from "../face/session";
 import { FIXTURES, fixtureAnalysis, fixtureFace } from "../fixtures";
 import { TeacherHead } from "../teacher";
 import { WordHeader, play, poseFor, sleep, useRefAudio } from "./shared";
@@ -27,6 +30,9 @@ export function Practice({ prompt, calibration, onResult, onHome }: {
   const stream = useRef<MediaStream | null>(null);
   const stopRecording = useRef<(() => void) | null>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const face = useRef<FaceSession | null>(null);
+  // Lips are only scored against the learner's own calibration; otherwise diagnose() goes audio-only.
+  const faceCal = LIVE_FACE ? usableFaceCalibration(calibration.face) : null;
   const refUrl = useRefAudio(prompt);
   const vowelWord = prompt.focus.includes("vowel");
   const list = prompt.reading === "list";
@@ -35,14 +41,19 @@ export function Practice({ prompt, calibration, onResult, onHome }: {
     let mounted = true;
     // With the face loop live, open the camera on arrival so the learner can get into frame before recording.
     if (LIVE_FACE) {
-      openMedia(true).then((s) => {
+      openMedia(true).then(async (s) => {
         if (!mounted) return s.getTracks().forEach((t) => t.stop());
         stream.current = s;
-        if (video.current) video.current.srcObject = s;
-      }).catch(() => setMessage(MIC_BLOCKED));
+        if (!video.current) return;
+        video.current.srcObject = s;
+        const session = await startFaceSession(video.current);
+        if (mounted) face.current = session; else session.stop();
+      }).catch((e) => console.warn("Camera unavailable; practicing with sound only", e));
     }
     return () => {
       mounted = false;
+      face.current?.stop();
+      face.current = null;
       stopRecording.current?.();
       stream.current?.getTracks().forEach((t) => t.stop());
       stream.current = null;
@@ -54,7 +65,8 @@ export function Practice({ prompt, calibration, onResult, onHome }: {
     if (phase !== "idle") return;
     setMessage(null);
     try {
-      stream.current ??= await openMedia(LIVE_FACE);
+      // A denied or busy camera shouldn't block practicing with sound only.
+      stream.current ??= await openMedia(LIVE_FACE).catch(() => openMedia(false));
     } catch {
       return setMessage(MIC_BLOCKED);
     }
@@ -63,9 +75,11 @@ export function Practice({ prompt, calibration, onResult, onHome }: {
       for (const n of [3, 2, 1]) { setCount(n); await sleep(800); }
       setPhase("recording");
       // Lists get a longer silence allowance so the pauses between 妈 麻 马 骂 don't end the take.
+      face.current?.begin();
       const rec = await record(stream.current, { maxSec: list ? 4 : 3, silenceMs: list ? 1000 : 600, onLevel: (rms) => setLevel(meterLevel(rms)) });
       stopRecording.current = rec.stop;
       const take = await rec.done;
+      const frames = face.current?.end(take.t0) ?? [];
       stopRecording.current = null;
       setLevel(0);
       if (take.problem) { setPhase("idle"); return setMessage(LEVEL_MESSAGES[take.problem]); }
@@ -73,8 +87,9 @@ export function Practice({ prompt, calibration, onResult, onHome }: {
       const audio = await analyze(prompt, take.wav, calibration);
       const levelWarning = audio.warnings.find((w) => w === "too_quiet" || w === "clipped");
       if (levelWarning) { setPhase("idle"); return setMessage(LEVEL_MESSAGES[levelWarning]); }
-      // shortcut: no face summaries until lane C's face loop lands, so diagnose() uses its audio-only messages.
-      onResult(audio, [], URL.createObjectURL(take.wav));
+      const lips = faceCal && frames.length
+        ? summarize(frames, audio.syllables.map((s) => ({ index: s.index, start: s.vowelStart, end: s.vowelEnd })), faceCal) : [];
+      onResult(audio, lips, URL.createObjectURL(take.wav));
     } catch (e) {
       console.error(e);
       setPhase("idle");

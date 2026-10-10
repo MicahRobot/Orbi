@@ -1,11 +1,14 @@
 // Onboarding (SPEC.md Module F, screen 1): welcome → native language → ~10 s calibration → "speakers of X often find…".
 // "Redo calibration" from Home re-enters at the calibration step.
-import { useState } from "react";
-import type { Calibration, L1Code, Profile } from "@shared/contracts/types";
-import { calibrateAudio, LIVE_AUDIO, type CalibrationTakes } from "../api/audio";
+import { useRef, useState } from "react";
+import type { Calibration, FaceFeatures, L1Code, Profile } from "@shared/contracts/types";
+import { calibrateAudio, LIVE_AUDIO, LIVE_FACE, type CalibrationTakes } from "../api/audio";
 import { openMedia, record } from "../capture/recorder";
 import { meterLevel } from "../capture/wav";
 import { L1S } from "../content/l1";
+import { faceCalibrationFrom } from "../face/calibration";
+import { pose } from "../face/features";
+import { type FaceSession, centralPose, startFaceSession } from "../face/session";
 import { fixtureCalibration } from "../fixtures";
 import { MIC_BLOCKED } from "./Practice";
 import { sleep } from "./shared";
@@ -92,32 +95,47 @@ function Calibrate({ onDone }: { onDone: (c: Calibration) => void }) {
   const [listening, setListening] = useState(false);
   const [level, setLevel] = useState(0);
   const [error, setError] = useState("");
+  const video = useRef<HTMLVideoElement>(null);
   const sample = () => onDone({ ...fixtureCalibration, createdAt: new Date().toISOString() });
 
   async function run() {
     setPhase("running");
     let stream: MediaStream | undefined;
+    let face: FaceSession | undefined;
     try {
-      stream = await openMedia(false);
+      // The camera learns your lips from the same takes; without it, calibration is voice-only.
+      stream = await openMedia(LIVE_FACE).catch(() => openMedia(false));
+      if (stream.getVideoTracks().length && video.current) {
+        video.current.srcObject = stream;
+        face = await startFaceSession(video.current).catch(() => undefined);
+      }
       const takes: Partial<CalibrationTakes> = {};
+      const poses: Partial<Record<"neutral" | "ee" | "oo" | "ah", FaceFeatures | null>> = {};
       for (const [i, t] of TAKES.entries()) {
         setIndex(i);
         setListening(false);
-        await sleep(1200);   // time to read the next instruction
+        face?.begin();
+        await sleep(1200);   // time to read the next instruction; the first pause doubles as the relaxed face
+        const relaxed = face?.end(performance.now()) ?? [];
+        if (i === 0) poses.neutral = pose(relaxed);
         setListening(true);
+        face?.begin();
         const rec = await record(stream, { maxSec: t.sec, onLevel: (rms) => setLevel(meterLevel(rms)) });
-        takes[t.name] = (await rec.done).wav;
+        const take = await rec.done;
+        takes[t.name] = take.wav;
+        if (t.name !== "glide") poses[t.name] = centralPose(face?.end(take.t0) ?? [], t.sec);
       }
       setListening(false);
       setPhase("sending");
       const audio = await calibrateAudio(takes as CalibrationTakes);
-      // shortcut: face poses come from the fixture until lane C's captureCalibrationPose lands.
-      onDone({ audio, face: fixtureCalibration.face, createdAt: new Date().toISOString() });
+      // Your own lips when all four poses came through; otherwise the sample face, which practice ignores.
+      onDone({ audio, face: faceCalibrationFrom(poses) ?? fixtureCalibration.face, createdAt: new Date().toISOString() });
     } catch (e) {
       console.error(e);
       setError(e instanceof DOMException && e.name === "NotAllowedError" ? MIC_BLOCKED : "Calibration didn't finish. Make sure the audio service is running, then try again.");
       setPhase("failed");
     } finally {
+      face?.stop();
       stream?.getTracks().forEach((t) => t.stop());
       setLevel(0);
     }
@@ -139,6 +157,7 @@ function Calibrate({ onDone }: { onDone: (c: Calibration) => void }) {
       )}
       {(phase === "running" || phase === "sending") && (
         <section className="card calib" aria-live="polite">
+          {LIVE_FACE && <video ref={video} autoPlay muted playsInline className="camera small" aria-label="Your camera" />}
           <ol className="progress-dots big" aria-hidden>
             {TAKES.map((t, i) => <li key={t.name} className={i < index || phase === "sending" ? "on" : i === index ? "now" : ""} />)}
           </ol>
