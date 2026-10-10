@@ -1,6 +1,7 @@
 // Learner profile and progress. Lane A owns this file.
 // Supabase (anonymous sign-in, no account needed) when VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are set;
-// otherwise, or when the network fails, this browser's localStorage, so the demo works offline.
+// otherwise, or when the network fails or hangs, this browser's localStorage, so the demo works offline.
+// Writes always go to localStorage first, so progress survives Wi-Fi dropping mid-session.
 // Tables and row-level security: supabase/migrations/0001_init.sql.
 import { createClient } from "@supabase/supabase-js";
 import type { AttemptRecord, Profile } from "@shared/contracts/types";
@@ -9,12 +10,19 @@ const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const supabase = url && key ? createClient(url, key) : null;
 
-async function userId(): Promise<string> {
-  const { data } = await supabase!.auth.getSession();
-  if (data.session) return data.session.user.id;
-  const { data: signedIn, error } = await supabase!.auth.signInAnonymously();
-  if (error || !signedIn.user) throw error ?? new Error("anonymous sign-in failed");
-  return signedIn.user.id;
+const TIMEOUT_MS = 3000;  // venue Wi-Fi can hang instead of failing; the screens never wait longer than this
+
+// One sign-in shared by every caller: loading the profile and attempts together must not create two anonymous users.
+let signedIn: Promise<string> | undefined;
+function userId(): Promise<string> {
+  signedIn ??= (async () => {
+    const { data } = await supabase!.auth.getSession();
+    if (data.session) return data.session.user.id;
+    const { data: anon, error } = await supabase!.auth.signInAnonymously();
+    if (error || !anon.user) throw error ?? new Error("anonymous sign-in failed");
+    return anon.user.id;
+  })().catch((e) => { signedIn = undefined; throw e; });
+  return signedIn;
 }
 
 // shortcut: offline writes stay in this browser and are never synced up; fine for a demo laptop.
@@ -29,27 +37,34 @@ const local = {
 
 async function orLocal<T>(remote: () => Promise<T>, offline: () => T): Promise<T> {
   if (!supabase) return offline();
-  try { return await remote(); } catch (e) { console.warn("Supabase unavailable, using local storage", e); return offline(); }
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(`no answer in ${TIMEOUT_MS} ms`)), TIMEOUT_MS); });
+  try { return await Promise.race([remote(), timeout]); } catch (e) { console.warn("Supabase unavailable, using local storage", e); return offline(); } finally { clearTimeout(timer); }
 }
 
 export const loadProfile = () => orLocal<Profile | null>(async () => {
   const { data, error } = await supabase!.from("profiles").select("l1, calibration").eq("id", await userId()).maybeSingle();
   if (error) throw error;
-  return data && { l1: data.l1, calibration: data.calibration ?? undefined };
+  return data ? { l1: data.l1, calibration: data.calibration ?? undefined } : local.get<Profile | null>("profile", null);
 }, () => local.get<Profile | null>("profile", null));
 
-export const saveProfile = (p: Profile) => orLocal(async () => {
-  const { error } = await supabase!.from("profiles").upsert({ id: await userId(), l1: p.l1, calibration: p.calibration ?? null, updated_at: new Date().toISOString() });
-  if (error) throw error;
+export const saveProfile = (p: Profile) => {
   local.set("profile", p);
-}, () => local.set("profile", p));
+  return orLocal(async () => {
+    const { error } = await supabase!.from("profiles").upsert({ id: await userId(), l1: p.l1, calibration: p.calibration ?? null, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  }, () => undefined);
+};
 
-export const saveAttempt = (a: AttemptRecord) => orLocal(async () => {
-  const { error } = await supabase!.from("attempts").insert({
-    user_id: await userId(), prompt_id: a.promptId, passed: a.passed, score: a.score, issue_ids: a.issueIds, created_at: a.createdAt,
-  });
-  if (error) throw error;
-}, () => local.set("attempts", [...local.get<AttemptRecord[]>("attempts", []), a]));
+export const saveAttempt = (a: AttemptRecord) => {
+  local.set("attempts", [...local.get<AttemptRecord[]>("attempts", []), a]);
+  return orLocal(async () => {
+    const { error } = await supabase!.from("attempts").insert({
+      user_id: await userId(), prompt_id: a.promptId, passed: a.passed, score: a.score, issue_ids: a.issueIds, created_at: a.createdAt,
+    });
+    if (error) throw error;
+  }, () => undefined);
+};
 
 export const loadAttempts = () => orLocal<AttemptRecord[]>(async () => {
   const { data, error } = await supabase!.from("attempts").select("prompt_id, passed, score, issue_ids, created_at")
