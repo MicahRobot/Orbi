@@ -2,18 +2,17 @@
 // lip calibration → save. "Redo calibration" from Home re-enters at the calibration step and returns.
 // Level and goals only shape the welcome; they aren't stored (the Profile contract has no place for them).
 import { useRef, useState } from "react";
-import type { Calibration, FaceFeatures, L1Code, Profile } from "@shared/contracts/types";
-import { calibrateAudio, LIVE_AUDIO, LIVE_FACE, type CalibrationTakes } from "../api/audio";
-import { openMedia, record } from "../capture/recorder";
+import type { Calibration, L1Code, Profile } from "@shared/contracts/types";
+import { LIVE_AUDIO, LIVE_FACE } from "../api/audio";
+import { type CalProgress, runCalibration, stepsFor } from "../capture/calibration";
+import { openMedia } from "../capture/recorder";
 import { meterLevel } from "../capture/wav";
 import { L1S } from "../content/l1";
 import { supabase } from "../data/store";
-import { faceCalibrationFrom } from "../face/calibration";
-import { pose } from "../face/features";
-import { type FaceSession, centralPose, startFaceSession } from "../face/session";
+import { type FaceSession, startFaceSession } from "../face/session";
 import { fixtureCalibration } from "../fixtures";
 import { MIC_BLOCKED } from "./Practice";
-import { TopBar, sleep } from "./shared";
+import { TopBar } from "./shared";
 
 type Step = "lang" | "native" | "level" | "goals" | "voice" | "save";
 const FLOW: Step[] = ["lang", "native", "level", "goals", "voice", "save"];
@@ -156,18 +155,11 @@ export function Onboarding({ redo, onDone, onExit }: { redo?: Profile; onDone: (
   );
 }
 
-const TAKES: { name: keyof CalibrationTakes; sec: number; say: string }[] = [
-  { name: "glide", sec: 3, say: "Slide your voice from high to low, like a siren" },
-  { name: "ee", sec: 2, say: "Say “ee” and hold it" },
-  { name: "oo", sec: 2, say: "Say “oo” and hold it" },
-  { name: "ah", sec: 2, say: "Say “ah” and hold it" },
-];
-
 /** About 10 seconds: a pitch glide and three held vowels for /calibrate/audio; the camera learns your lips from the same takes. */
 function Calibrate({ onDone }: { onDone: (c: Calibration) => void }) {
   const [phase, setPhase] = useState<"intro" | "running" | "sending" | "failed">("intro");
-  const [index, setIndex] = useState(0);
-  const [listening, setListening] = useState(false);
+  const [progress, setProgress] = useState<CalProgress>({ index: 0, phase: "prep" });
+  const [steps, setSteps] = useState(stepsFor(LIVE_FACE));
   const [level, setLevel] = useState(0);
   const [error, setError] = useState("");
   const video = useRef<HTMLVideoElement>(null);
@@ -184,27 +176,13 @@ function Calibrate({ onDone }: { onDone: (c: Calibration) => void }) {
         video.current.srcObject = stream;
         face = await startFaceSession(video.current).catch(() => undefined);
       }
-      const takes: Partial<CalibrationTakes> = {};
-      const poses: Partial<Record<"neutral" | "ee" | "oo" | "ah", FaceFeatures | null>> = {};
-      for (const [i, t] of TAKES.entries()) {
-        setIndex(i);
-        setListening(false);
-        face?.begin();
-        await sleep(1200);   // time to read the next instruction; the first pause doubles as the relaxed face
-        const relaxed = face?.end(performance.now()) ?? [];
-        if (i === 0) poses.neutral = pose(relaxed);
-        setListening(true);
-        face?.begin();
-        const rec = await record(stream, { maxSec: t.sec, onLevel: (rms) => setLevel(meterLevel(rms)) });
-        const take = await rec.done;
-        takes[t.name] = take.wav;
-        if (t.name !== "glide") poses[t.name] = centralPose(face?.end(take.t0) ?? [], t.sec);
-      }
-      setListening(false);
+      setSteps(stepsFor(!!face));
+      const { calibration } = await runCalibration(stream, face, {
+        onProgress: setProgress,
+        onLevel: (rms) => setLevel(meterLevel(rms)),
+      });
       setPhase("sending");
-      const audio = await calibrateAudio(takes as CalibrationTakes);
-      // Your own lips when all four poses came through; otherwise the sample face, which practice ignores.
-      onDone({ audio, face: faceCalibrationFrom(poses) ?? fixtureCalibration.face, createdAt: new Date().toISOString() });
+      onDone(calibration);
     } catch (e) {
       console.error(e);
       setError(e instanceof DOMException && e.name === "NotAllowedError" ? MIC_BLOCKED : "Calibration didn't finish. Make sure the audio service is running, then try again.");
@@ -221,8 +199,8 @@ function Calibrate({ onDone }: { onDone: (c: Calibration) => void }) {
       <h1 tabIndex={-1}>Tune Orbi to your voice</h1>
       {phase === "intro" && (
         <>
-          <p className="muted">Four short sounds, about 10 seconds. Orbi learns your high and low notes, and how your “ee” and “oo” look and sound.</p>
-          <ol className="plan">{TAKES.map((t) => <li key={t.name}>{t.say}</li>)}</ol>
+          <p className="muted">A few short sounds, about 10 seconds. Orbi learns your high and low notes, and how your “ee” and “oo” look and sound.</p>
+          <ol className="plan">{steps.map((t) => <li key={t.key}>{t.title}</li>)}</ol>
           {LIVE_AUDIO
             ? <div><button className="btn primary big" onClick={() => void run()} autoFocus>Start</button></div>
             : <><p className="faint small">Fixture mode uses a recorded voice profile, so there's nothing to record.</p>
@@ -233,13 +211,13 @@ function Calibrate({ onDone }: { onDone: (c: Calibration) => void }) {
         <div className="card calib" aria-live="polite">
           {LIVE_FACE && <div className="cam small"><video ref={video} autoPlay muted playsInline aria-label="Your camera" /></div>}
           <ol className="calib-dots" aria-hidden>
-            {TAKES.map((t, i) => <li key={t.name} className={i < index || phase === "sending" ? "on" : i === index ? "now" : ""} />)}
+            {steps.map((t, i) => <li key={t.key} className={i < progress.index || phase === "sending" ? "on" : i === progress.index ? "now" : ""} />)}
           </ol>
           {phase === "sending" ? <p className="say">Got it. Tuning to you…</p> : (
             <>
-              <p className="say">{TAKES[index].say}</p>
-              <p className="muted">{listening ? "Now!" : "Get ready…"}</p>
-              <div className="level" aria-hidden><span style={{ width: `${listening ? level * 100 : 0}%` }} /></div>
+              <p className="say">{steps[progress.index].title}</p>
+              <p className="muted">{progress.phase === "rec" ? steps[progress.index].sub : "Get ready…"}</p>
+              <div className="level" aria-hidden><span style={{ width: `${progress.phase === "rec" ? level * 100 : 0}%` }} /></div>
             </>
           )}
         </div>
