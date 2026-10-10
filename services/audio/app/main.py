@@ -23,7 +23,8 @@ MODE = os.getenv("AUDIO_MODE", "fixture")
 app = FastAPI(title="Orbi audio service")
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    # Local dev, plus the Vercel production site and its preview deployments.
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?|https://orbi-(alpha|[a-z0-9]+-micah-robot-s-projects)\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )
