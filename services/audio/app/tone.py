@@ -14,6 +14,7 @@ ANCHORS = {
 }
 NEUTRAL_LEVEL = {1: 2, 2: 3, 3: 4, 4: 1}  # B1 rule 5: neutral-tone height after each tone
 MAX_GAP = 8  # 80 ms
+BLIP = 4     # voiced islands under 40 ms next to a longer one are tracker errors (octave jumps at consonants and creak)
 
 
 def template(variant: str, neutral_level: float = 3) -> list[float]:
@@ -33,11 +34,45 @@ def _fill_short_gaps(x: np.ndarray) -> np.ndarray:
     return x
 
 
+def _drop_blips(f0: np.ndarray) -> np.ndarray:
+    voiced = np.concatenate(([0], (~np.isnan(f0)).astype(int), [0]))
+    edges = np.flatnonzero(np.diff(voiced))
+    islands = list(zip(edges[::2], edges[1::2]))
+    if not islands or max(e - s for s, e in islands) < BLIP:
+        return f0
+    f0 = f0.copy()
+    for s, e in islands:
+        if e - s < BLIP:
+            f0[s:e] = np.nan
+    return f0
+
+
+def _fix_octaves(f0: np.ndarray) -> np.ndarray:
+    """Halve or double frames that jump by more than 1.6x from the previous voiced frame, walking out
+    from the middle of the longest voiced island: pitch trackers jump octaves at consonants and in creak."""
+    voiced = np.flatnonzero(~np.isnan(f0))
+    if len(voiced) < 2:
+        return f0
+    f0 = f0.copy()
+    islands = np.split(voiced, np.flatnonzero(np.diff(voiced) > 1) + 1)
+    core = max(islands, key=len)
+    mid = int(np.flatnonzero(voiced == core[len(core) // 2])[0])
+    for order in (voiced[mid + 1:], voiced[mid - 1::-1] if mid else []):
+        prev = f0[voiced[mid]]
+        for i in order:
+            while f0[i] > 1.6 * prev:
+                f0[i] /= 2
+            while f0[i] < prev / 1.6:
+                f0[i] *= 2
+            prev = f0[i]
+    return f0
+
+
 def contour(f0: np.ndarray, cal_f0: dict, variant: str):
     """Syllable f0 frames (Hz, NaN = unvoiced) to (10 Chao levels or [], voicedRatio)."""
     voiced_ratio = float(np.mean(~np.isnan(f0))) if len(f0) else 0.0
     trim = int(len(f0) * 0.1)
-    f0 = _fill_short_gaps(f0[trim:len(f0) - trim])
+    f0 = _fill_short_gaps(_fix_octaves(_drop_blips(f0))[trim:len(f0) - trim])
     if np.sum(~np.isnan(f0)) < 3:
         return [], voiced_ratio
     voiced = np.flatnonzero(~np.isnan(f0))

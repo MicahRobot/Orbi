@@ -84,3 +84,21 @@ def test_each_issue_detector(target, contour, issue):
 def test_neutral_tone_template_and_no_wrong_tone():
     assert tone.template("T5", tone.NEUTRAL_LEVEL[3]) == [4.0] * 10
     assert tone.tone_result("T5", tone.template("T1"), 0.9, 1)["issues"] == []
+
+
+def test_short_octave_blips_next_to_the_tone_are_ignored():
+    f0 = frames("T4")
+    blipped = f0.copy()
+    blipped[0:2], blipped[2], blipped[-3], blipped[-2:] = 2 * f0[0], np.nan, np.nan, 2 * f0[-1]
+    assert tone.contour(blipped, CAL_F0, "T4")[0] == pytest.approx(tone.contour(f0, CAL_F0, "T4")[0], abs=0.15)
+    lone = np.full(10, np.nan)
+    lone[3:5] = 150.0  # nothing longer around it: keep what there is
+    assert tone.contour(lone, CAL_F0, "T1")[1] == 0.2
+
+
+def test_octave_jumps_are_folded_back():
+    f0 = frames("T4")
+    jumped = f0.copy()
+    jumped[-8:] *= 2  # tracker doubles the creaky end of the fall, with no gap to mark it
+    jumped[:3] /= 2
+    assert tone.contour(jumped, CAL_F0, "T4")[0] == pytest.approx(tone.contour(f0, CAL_F0, "T4")[0], abs=0.01)
